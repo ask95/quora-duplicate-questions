@@ -29,9 +29,9 @@ def read_and_index(infile, indexer, add_to_indexer=False, word_counter=None):
     exs = []
     with open(infile) as tsvfile:
         tsvreader = csv.reader(tsvfile, delimiter="\t")
-        col_names = tsvreader.readline()
+        col_names = next(tsvreader)
         for line in tsvreader:
-            fields = line.split("\t")
+            fields = line
             label = fields[-1]
             q1 = fields[-3]
             q2 = fields[-2]
