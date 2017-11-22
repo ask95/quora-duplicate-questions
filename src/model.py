@@ -50,9 +50,10 @@ def train_bench1(train_exs, test_exs, word_embeddings):
 
     ## Matrix with seq word indices and word vectors
     dim = len(word_embeddings.get_embedding_byidx(0))
-    trainq1_s_input = np.zeros([len(train_exs), seq_max_len, dim])
-    trainq2_s_input = np.zeros([len(train_exs), seq_max_len, dim])
+    #trainq1_s_input = np.zeros([len(train_exs), seq_max_len, dim])
+    #trainq2_s_input = np.zeros([len(train_exs), seq_max_len, dim])
 
+    '''
     for i in range(len(trainQ1_mat)):
         for wi in range(len(trainQ1_mat[i])):
             word_vec1 = word_embeddings.get_embedding_byidx(trainQ1_mat[i][wi])
@@ -62,7 +63,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
             trainq2_s_input[i][wi] = word_vec2
 
     print "TRAIN Extraction ends!"
-
+	'''
 
 
 
@@ -78,9 +79,10 @@ def train_bench1(train_exs, test_exs, word_embeddings):
 
     ## Matrix with seq word indices and word vectors
     dim = len(word_embeddings.get_embedding_byidx(0))
-    testq1_s_input = np.zeros([len(test_exs), seq_max_len, dim])
-    testq2_s_input = np.zeros([len(test_exs), seq_max_len, dim])
+    #testq1_s_input = #np.zeros([len(test_exs), seq_max_len, dim])
+    #testq2_s_input = np.zeros([len(test_exs), seq_max_len, dim])
 
+    '''
     for i in range(len(testQ1_mat)):
         for wi in range(len(trainQ1_mat[i])):
             word_vec1 = word_embeddings.get_embedding_byidx(testQ1_mat[i][wi])
@@ -88,6 +90,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
 
             testq1_s_input[i][wi] = word_vec1
             testq2_s_input[i][wi] = word_vec2
+	'''
 
     print "TEST Extraction ends!"
 
@@ -140,7 +143,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
     #print "Hey!", output.shape
     W = tf.get_variable("W", [num_classes, num_cells*2], 
         initializer=tf.contrib.layers.xavier_initializer(seed=0))
-    print "HI SEXY", W.shape, z.shape
+    #print "HI SEXY", W.shape, z.shape
     #b = tf.get_variable("b", [num_classes])
     #probs = tf.contrib.layers.fully_connected([output[0][-1]], num_classes, activation_fn=tf.nn.softmax)
     #print probs.shape
@@ -200,13 +203,13 @@ def train_bench1(train_exs, test_exs, word_embeddings):
             print "Epoch:", i
             loss_this_iter = 0
             # batch_size of 1 here; if we want bigger batches, we need to build our network appropriately
-            for ex_idx in xrange(0, len(trainq1_s_input)):
+            for ex_idx in xrange(0, len(trainQ1_mat)):
                 # sess.run generally evaluates variables in the computation graph given inputs. "Evaluating" train_op
                 # causes training to happen
                 # [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {fx: train_xs[ex_idx],
                 #                                                                   label: np.array([train_ys[ex_idx]])})
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {q1: [trainq1_s_input[ex_idx]],
-                                                                                    q2: [trainq2_s_input[ex_idx]],
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {q1: [map(word_embeddings.get_embedding_byidx, trainQ1_mat[ex_idx])],#trainq1_s_input[ex_idx]],
+                                                                                    q2: [map(word_embeddings.get_embedding_byidx, trainQ2_mat[ex_idx])],
                                                                                    label: np.array([train_labels_arr[ex_idx]]),
                                                                                    q2_len: np.array([trainQ2_seq_lens[ex_idx]]), 
                                                                                    q1_len: np.array([trainQ1_seq_lens[ex_idx]])})
@@ -216,19 +219,19 @@ def train_bench1(train_exs, test_exs, word_embeddings):
         
         # Evaluate on the test set
             test_correct = 0
-            for ex_idx in xrange(0, len(testq1_s_input)):
-                # Note that we only feed in the x, not the y, since we're not training. We're also extracting different
+            for ex_idx in xrange(0, len(testQ1_mat)):
+                # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
                 # quantities from the running of the computation graph, namely the probabilities, prediction, and z
                 [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                                                                                  feed_dict={q1: [testq1_s_input[ex_idx]],
-                                                                                    q2: [testq2_s_input[ex_idx]],
+                                                                                  feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+                                                                                    q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
                                                                                    label: np.array([test_labels_arr[ex_idx]]),
                                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
                                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
-                print pred_this_instance, test_labels_arr[ex_idx]
+                #print pred_this_instance, test_labels_arr[ex_idx]
                 if (test_labels_arr[ex_idx] == pred_this_instance):
                     test_correct += 1
-                    print test_correct
+                    #print test_correct
             # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
             #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
             # print "  Hidden layer activations for this example: " + repr(z_this_instance)
