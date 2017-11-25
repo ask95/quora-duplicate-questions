@@ -1,8 +1,24 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-question_pairs_file = sys.argv[1]
-embeddings_file = sys.argv[2]
+from data_gen import *
+from sklearn.cross_validation import train_test_split
+from model import *
+#question_pairs_file = sys.argv[1]
+#embeddings_file = sys.argv[2]
+
+word_vectors = read_word_embeddings('../data/paragram-phrase-XXL.txt')
+#exs = read_and_index('../data/q10k.txt', word_vectors.word_indexer)
+exs = read_and_index('../data/quora_duplicate_questions.tsv', word_vectors.word_indexer)
+#print len(exs)
+#raw_input()
+
+train_exs, test_exs = train_test_split(exs, test_size=0.3)
+
+#avg_model = train_avg_model(train_exs, word_vectors)
+#test_exs_predicted = avg_model.predict(test_exs)
+
+lstm_model = train_lstm_model(train_exs, word_vectors, None)
 
 # load embeddings
 word_emb = {}
@@ -13,6 +29,8 @@ for line in open(embeddings_file):
 
 label0_pred = []
 label1_pred = []
+
+
 
 for line in open(question_pairs_file):
   line = line.strip()
