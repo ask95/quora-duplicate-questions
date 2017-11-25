@@ -4,7 +4,7 @@ from utils import *
 import re
 import numpy as np
 import csv
-
+import random
 
 # Wraps a sequence of word indices with a 0-1 label (0 = negative, 1 = positive)
 class QuestionPair:
@@ -61,25 +61,50 @@ def read_and_index(infile, indexer, add_to_indexer=False, word_counter=None):
     return exs
 
 
+def read_and_index_ppdb(infile, indexer, add_to_indexer=False, word_counter=None):
+    exs = []
+    with open(infile) as tsvfile:
+        tsvreader = csv.reader(tsvfile, delimiter="\t", quoting=csv.QUOTE_NONE)
+        for line in tsvreader:
+            try:
+                #print line
+                fields = line
+                label = 1
+                s1 = fields[0]
+                s2 = fields[1]
 
-    
-    # f = open(infile)
-    # exs = []
-    # for line in f:
-    #     if len(line.strip()) > 0:
-    #         fields = line.split("\t")
-    #         label = int(fields[0])
-    #         sent = fields[1]
-    #         tokenized_cleaned_sent = filter(lambda x: x != '', clean_str(sent).rstrip().split(" "))
-    #         if word_counter is not None:
-    #             for word in tokenized_cleaned_sent:
-    #                 word_counter.increment_count(word, 1.0)
-    #         indexed_sent = [indexer.get_index(word) if indexer.contains(word) or add_to_indexer else indexer.get_index("UNK")
-    #              for word in tokenized_cleaned_sent]
-    #         exs.append(SentimentExample(indexed_sent, label))
-    # f.close()
-    # return exs
+                token_clean_s1 = filter(lambda x: x != '', clean_str(s1).rstrip().split())
+                token_clean_s2 = filter(lambda x: x != '', clean_str(s2).rstrip().split())
 
+                if word_counter is not None:
+                    for word in token_clean_s1:
+                        word_counter.increment_count(word, 1.0)
+                    for word in token_clean_s2:
+                        word_counter.increment_count(word, 1.0)
+                indexed_s1 = [indexer.get_index(word) if indexer.contains(word) or add_to_indexer else indexer.get_index("UNK") for word in token_clean_s1]
+                indexed_s2 = [indexer.get_index(word) if indexer.contains(word) or add_to_indexer else indexer.get_index("UNK") for word in token_clean_s2]
+                
+                if len(indexed_s1) > 0 and len(indexed_s2) > 0:
+                    exs.append(QuestionPair(indexed_s1, indexed_s2, 1))
+            except:
+                pass
+
+    # add random negative examples
+    n_neg_exs = len(exs)
+    for i in xrange(0, n_neg_exs):
+        indexed_s1 = []
+        indexed_s2 = []
+        while len(indexed_s1) == 0 or len(indexed_s2) == 0:
+            idx1 = np.random.randint(n_neg_exs)
+            idx2 = np.random.randint(n_neg_exs)
+            r1 = np.random.random()
+            r2 = np.random.random()
+            indexed_s1 = exs[idx1].indexed_q1 if r1<0.5 else exs[idx1].indexed_q2
+            indexed_s2 = exs[idx2].indexed_q1 if r2<0.5 else exs[idx2].indexed_q2
+        exs.append((QuestionPair(indexed_s1, indexed_s2, 0)))
+
+    random.shuffle(exs)
+    return exs
 
 # Writes sentiment examples to an output file in the same format they are read in. However, note that what gets written
 # out is tokenized and contains UNKs, so this will not exactly match the input file.

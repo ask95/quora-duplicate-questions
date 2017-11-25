@@ -2,23 +2,32 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from data_gen import *
-from sklearn.cross_validation import train_test_split
+from random import shuffle
+#from sklearn.cross_validation import train_test_split
 from model import *
 #question_pairs_file = sys.argv[1]
 #embeddings_file = sys.argv[2]
 
 word_vectors = read_word_embeddings('../data/paragram-phrase-XXL.txt')
-#exs = read_and_index('../data/q10k.txt', word_vectors.word_indexer)
-exs = read_and_index('../data/quora_duplicate_questions.tsv', word_vectors.word_indexer)
+exs = read_and_index('../data/q10k.txt', word_vectors.word_indexer)
+ppdb = read_and_index_ppdb('../data/all_pairs_1k.txt', word_vectors.word_indexer)
+print len(ppdb)
+exs = exs[:1000]
+#exs = read_and_index('../data/quora_duplicate_questions.tsv', word_vectors.word_indexer)
 #print len(exs)
 #raw_input()
+
+def train_test_split(exs, test_size):
+    shuffle(exs)
+    n = len(exs)
+    return (exs[int(test_size * n):], exs[:int(test_size * n)])
 
 train_exs, test_exs = train_test_split(exs, test_size=0.3)
 
 #avg_model = train_avg_model(train_exs, word_vectors)
 #test_exs_predicted = avg_model.predict(test_exs)
 
-lstm_model = train_lstm_model(train_exs, word_vectors, None)
+lstm_model = train_lstm_model(train_exs, word_vectors, ppdb)
 
 # load embeddings
 word_emb = {}

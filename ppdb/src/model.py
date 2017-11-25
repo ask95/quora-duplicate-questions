@@ -1,6 +1,6 @@
 import numpy as np
 from data_gen import *
-from sklearn.linear_model import LogisticRegression
+#from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
 
 def generate_avg_embedding(indexed_q, word_vectors):
@@ -42,16 +42,28 @@ def train_avg_model(train_exs, word_vectors):
     print 'Training accuracy:', model.score(X, y)
     return AvgEmbeddingModel(model, word_vectors)
 
+def pad(seq, length):
+    seq = np.asarray(seq)
+    #print np.shape(seq)
+    if length < np.size(seq, 0):
+        return seq[:length, :]
+    result = np.zeros((length, np.size(seq, 1)))
+    result[0:seq.shape[0], :] = seq
+    return result
+
 def train_lstm_model(train_exs, word_vectors, ppdb_pairs):
+
+
     n_classes = 2
     lstm_size = 100
-    seq_max_len = 300
+    seq_max_len = 50
+    batch_size = 1
     dim = len(word_vectors.get_embedding_byidx(0))
 
     #defining the computation graph
-    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    q1 = tf.placeholder(tf.float32, [batch_size, seq_max_len, dim])
     len1 = tf.placeholder(tf.int32, 1)
-    q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    q2 = tf.placeholder(tf.float32, [batch_size, seq_max_len, dim])
     len2 = tf.placeholder(tf.int32, 1)
 
     def myLSTMCell(reuse_):
@@ -60,12 +72,16 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs):
 
     #lstm = tf.contrib.rnn.BasicLSTMCell(lstm_size)
 
-    x1 = tf.unstack(q1, seq_max_len, 1)
-    x2 = tf.unstack(q2, seq_max_len, 1)
-    outputs1, states1 = tf.contrib.rnn.static_rnn(myLSTMCell(tf.get_variable_scope().reuse), x1, sequence_length=len1, dtype=tf.float32)
-    outputs2, states2 = tf.contrib.rnn.static_rnn(myLSTMCell(True), x2, sequence_length=len2, dtype=tf.float32)
+    #x1 = tf.unstack(q1, seq_max_len, 1)
+    #x2 = tf.unstack(q2, seq_max_len, 1)
+    outputs1, states1 = tf.nn.dynamic_rnn(myLSTMCell(tf.get_variable_scope().reuse), q1, dtype=tf.float32)
+    outputs2, states2 = tf.nn.dynamic_rnn(myLSTMCell(True), q2, dtype=tf.float32)
 
-    states_concat = tf.concat((tf.squeeze(states1[-1]), tf.squeeze(states2[-1])), axis=-1)
+    z1 = tf.reduce_mean(outputs1[0], axis=0)
+    z2 = tf.reduce_mean(outputs2[0], axis=0)
+
+    #states_concat = tf.concat((tf.squeeze(states1[-1]), tf.squeeze(states2[-1])), axis=-1)
+    states_concat = tf.concat([z1, z2], 0)
 
     W = tf.get_variable("W", [n_classes, 2 * lstm_size])
     probs = tf.tensordot(W, states_concat, 1)
@@ -103,18 +119,34 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs):
         train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         tf.set_random_seed(0)
         sess.run(init)
-        step_idx = 0
+        # merge ppdb and train exs
+
+        #print (train_exs[:100])
+        #input()
+
+        #print (train_exs[1])
+        #print (ppdb_pairs[1])
+        #input()
+        #print len(train_exs)
+        train_exs = ppdb_pairs + train_exs
+        #print len(train_exs)
         for i in range(0, n_epochs):
+            step_idx = 0
             print 'Epoch:', i
             loss_this_iter = 0
-
+            #print len(train_exs)
             for ex_idx in xrange(0, len(train_exs)):
+                if step_idx % 1000 == -1:
+                    print 'step:', step_idx
+                #print len(train_exs[ex_idx].indexed_q1)
+                #print len(train_exs[ex_idx].indexed_q2)
+                #print train_exs[ex_idx].label
                 [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {
-                    q1: [map(word_vectors.get_embedding_byidx, train_exs[ex_idx].indexed_q1)], 
-                    q2: [map(word_vectors.get_embedding_byidx, train_exs[ex_idx].indexed_q2)], 
+                    q1: [pad(map(word_vectors.get_embedding_byidx, train_exs[ex_idx].indexed_q1), seq_max_len)], 
+                    q2: [pad(map(word_vectors.get_embedding_byidx, train_exs[ex_idx].indexed_q2), seq_max_len)], 
                     label: np.array([train_exs[ex_idx].label]), 
-                    len1: len(train_exs[ex_idx].indexed_q1),
-                    len2: len(train_exs[ex_idx],indexed_q2)})
+                    len1: np.array([len(train_exs[ex_idx].indexed_q1)]),
+                    len2: np.array([len(train_exs[ex_idx].indexed_q2)])})
                 step_idx += 1
                 loss_this_iter += loss_this_instance
             print 'Loss for iteration ' + repr(i) + ': ' + repr(loss_this_iter)
