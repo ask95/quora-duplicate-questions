@@ -2,6 +2,7 @@ import numpy as np
 from data_gen import *
 #from sklearn.linear_model import LogisticRegression
 import tensorflow as tf
+from random import shuffle
 
 def generate_avg_embedding(indexed_q, word_vectors):
     dim = len(word_vectors.get_embedding_byidx(0))
@@ -51,8 +52,6 @@ def pad(seq, length):
     return result
 
 def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
-
-
     n_classes = 2
     lstm_size = 100
     seq_max_len = 50
@@ -61,26 +60,26 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
 
     #defining the computation graph
     q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    len1 = tf.placeholder(tf.int32, 1)
+    len1 = tf.placeholder(tf.int32, None)
     q2 = tf.placeholder(tf.float32, [None , seq_max_len, dim])
-    len2 = tf.placeholder(tf.int32, 1)
+    len2 = tf.placeholder(tf.int32, None)
 
     def myLSTMCell(reuse_):
         lstm = tf.nn.rnn_cell.LSTMCell(lstm_size, reuse=reuse_)
         return lstm
 
-    outputs1, states1 = tf.nn.dynamic_rnn(myLSTMCell(tf.get_variable_scope().reuse), q1, dtype=tf.float32)
-    outputs2, states2 = tf.nn.dynamic_rnn(myLSTMCell(True), q2, dtype=tf.float32)
+    outputs1, states1 = tf.nn.dynamic_rnn(myLSTMCell(tf.get_variable_scope().reuse), q1, sequence_length=len1, dtype=tf.float32)
+    outputs2, states2 = tf.nn.dynamic_rnn(myLSTMCell(True), q2, sequence_length=len2, dtype=tf.float32)
 
     z1 = tf.reduce_mean(outputs1, axis=1)
     z2 = tf.reduce_mean(outputs2, axis=1)
 
     states_concat = tf.concat([z1, z2], 1)
 
-    W = tf.get_variable("W", [2 * lstm_size, n_classes])
+    W = tf.get_variable("W", [2 * lstm_size, n_classes], initializer=tf.contrib.layers.xavier_initializer(seed=0))
     probs = tf.tensordot(states_concat, W, 1)
 
-    prediction = tf.argmax(probs)
+    prediction = tf.argmax(probs, axis=1)
 
     label = tf.placeholder(tf.int32, None)
     label_onehot = tf.one_hot(label, n_classes)
@@ -119,23 +118,35 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
             step_idx = 0
             print 'Epoch:', i
             loss_this_iter = 0
+            shuffle(train_exs)
             for ex_idx in xrange(0, len(train_exs)/batch_size):
-                if step_idx % 100 == 0:
-                    print 'step:', step_idx
                 q1_ = []
                 q2_ = []
                 label_ = []
+                len1_ = []
+                len2_ = []
                 for b in xrange(0, batch_size):
                     curr_idx = ex_idx * batch_size + b
                     q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
                     q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
                     label_.append(train_exs[curr_idx].label)
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {
+                    len1_.append(len(train_exs[curr_idx].indexed_q1))
+                    len2_.append(len(train_exs[curr_idx].indexed_q2))
+
+                [_, loss_this_instance, summary, z1_, z2_, probs_, prediction_] = sess.run([train_op, loss, merged, z1, z2, probs, prediction], feed_dict = {
                     q1: q1_, 
                     q2: q2_, 
                     label: np.array(label_), 
-                    len1: np.array([len(train_exs[ex_idx].indexed_q1)]),
-                    len2: np.array([len(train_exs[ex_idx].indexed_q2)])})
+                    len1: np.array(len1_),
+                    len2: np.array(len2_)})
+                if step_idx % 100 == 0:
+                    lr = sess.run(opt._lr)
+                    print 'step:', step_idx
+                    #print 'lr:', lr
+                    #print 'z1:', np.linalg.norm(z1_)
+                    #print 'z2:', np.linalg.norm(z2_)
+                    #print 'probs:', probs_
+                    #print 'pred:', prediction_
                 step_idx += 1
                 loss_this_iter += loss_this_instance
             print 'Loss for iteration ' + repr(i) + ': ' + repr(loss_this_iter)
@@ -148,6 +159,7 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
                 q2: [pad(map(word_vectors.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)], 
                 len1: np.array([len(test_exs[ex_idx].indexed_q1)]),
                 len2: np.array([len(test_exs[ex_idx].indexed_q2)])})
+            print test_exs[ex_idx].label, pred_this_instance[0]
             if (test_exs[ex_idx].label == pred_this_instance[0]):
                 test_correct += 1
         print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after training'
