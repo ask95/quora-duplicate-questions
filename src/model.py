@@ -199,7 +199,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
     # RUN TRAINING AND TEST
     # Initializer; we need to run this first to initialize variables
     init = tf.global_variables_initializer()
-    num_epochs = 3
+    num_epochs = 7
     merged = tf.summary.merge_all()  # merge all the tensorboard variables
     # The computation graph must be run in a particular Tensorflow "session". Parameters, etc. are localized to the
     # session (unless you pass them around outside it). All runs of a computation graph with certain values are relative
