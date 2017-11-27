@@ -206,7 +206,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
     # to a particular session
     with tf.Session() as sess:
         # Write a logfile to the logs/ directory, can use Tensorboard to view this
-        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
         # Initialize variables
