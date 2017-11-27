@@ -380,7 +380,7 @@ def train_bench2(train_exs, test_exs, word_embeddings):
         initializer=tf.contrib.layers.xavier_initializer(seed=0))
     probs = tf.nn.softmax(tf.tensordot(lyr_1, W_2, 1))
 
-    one_best = tf.argmax(probs)
+    one_best = tf.argmax(probs, axis=1)
     print "hey sexy", tf.shape(probs)
     label_onehot = tf.one_hot(label, num_classes)
     #print tf.shape(probs)[0], tf.shape(label_onehot)[0]
@@ -390,11 +390,11 @@ def train_bench2(train_exs, test_exs, word_embeddings):
 
 
 
-    decay_steps = 100
+    decay_steps = 1000
     learning_rate_decay_factor = 0.995
     global_step = tf.contrib.framework.get_or_create_global_step()
     # Smaller learning rates are sometimes necessary for larger networks
-    initial_learning_rate = 0.0001
+    initial_learning_rate = 0.01
     # Decay the learning rate exponentially based on the number of steps.
     lr = tf.train.exponential_decay(initial_learning_rate,
                                     global_step,
@@ -482,6 +482,7 @@ def train_bench2(train_exs, test_exs, word_embeddings):
                                                                                    q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                    q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
                 if ex_idx % 500 == 0:
+                    print probs_this_instance, pred_this_instance
                     print pred_this_instance[0], test_exs[ex_idx].label
                 
                 if (test_exs[ex_idx].label == pred_this_instance[0]):
