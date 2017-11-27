@@ -175,7 +175,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
     learning_rate_decay_factor = 0.995
     global_step = tf.contrib.framework.get_or_create_global_step()
     # Smaller learning rates are sometimes necessary for larger networks
-    initial_learning_rate = 0.0001
+    initial_learning_rate = 0.01
     # Decay the learning rate exponentially based on the number of steps.
     lr = tf.train.exponential_decay(initial_learning_rate,
                                     global_step,
@@ -263,7 +263,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
                                                                                    q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                    q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
                 if ex_idx % 50 == 0:
-                    probs_this_instance, pred_this_instance
+                    print probs_this_instance, pred_this_instance
                     print pred_this_instance[0], test_exs[ex_idx].label
                 
                 if (test_exs[ex_idx].label == pred_this_instance[0]):
