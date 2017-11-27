@@ -161,7 +161,7 @@ def train_bench1(train_exs, test_exs, word_embeddings):
     #print probs.shape
     #probs = tf.reshape(probs, shape=[1,num_classes])
     probs = tf.nn.softmax(tf.tensordot(z, W, 1))
-    one_best = tf.argmax(probs)
+    one_best = tf.argmax(probs, axis=1)
     print "hey sexy", tf.shape(probs)
     label_onehot = tf.one_hot(label, num_classes)
     #print tf.shape(probs)[0], tf.shape(label_onehot)[0]
@@ -262,7 +262,8 @@ def train_bench1(train_exs, test_exs, word_embeddings):
                                                                                    label: np.array([test_exs[ex_idx].label]),
                                                                                    q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                    q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
-                if ex_idx % 500 == 0:
+                if ex_idx % 50 == 0:
+                    probs_this_instance, pred_this_instance
                     print pred_this_instance[0], test_exs[ex_idx].label
                 
                 if (test_exs[ex_idx].label == pred_this_instance[0]):
@@ -284,57 +285,10 @@ def train_bench2(train_exs, test_exs, word_embeddings):
     print "TRAIN Extraction begins!"
     print len(train_exs)
 
-    # trainQ1_mat = []
-    # trainQ2_mat = []
-    # trainQ1_seq_lens = []
-    # trainQ2_seq_lens = []
-    # train_labels_arr = []
-
-    # for ex in train_exs:
-    #     trainQ1_mat.append(pad_to_length(np.array(ex.indexed_q1), seq_max_len))
-    #     trainQ2_mat.append(pad_to_length(np.array(ex.indexed_q2), seq_max_len))
-    #     trainQ1_seq_lens.append(len(ex.indexed_q1))
-    #     trainQ2_seq_lens.append(len(ex.indexed_q2))
-    #     train_labels_arr.append(ex.label)
-
-
-    # trainQ1_mat = np.asarray(trainQ1_mat)
-    # trainQ2_mat = np.asarray(trainQ2_mat)
-    # trainQ1_seq_lens = np.array(trainQ1_seq_lens)
-    # trainQ2_seq_lens = np.array(trainQ2_seq_lens)
-    # train_labels_arr = np.array(train_labels_arr)
-    # ## Labels
-    # #train_labels_arr = np.array([ex.label for ex in train_exs])
-    # print train_labels_arr[5]
 
     ## Matrix with seq word indices and word vectors
     dim = len(word_embeddings.get_embedding_byidx(0))
-    #trainq1_s_input = np.zeros([len(train_exs), seq_max_len, dim])
-    #trainq2_s_input = np.zeros([len(train_exs), seq_max_len, dim])
 
-    '''
-    for i in range(len(trainQ1_mat)):
-        for wi in range(len(trainQ1_mat[i])):
-            word_vec1 = word_embeddings.get_embedding_byidx(trainQ1_mat[i][wi])
-            word_vec2 = word_embeddings.get_embedding_byidx(trainQ2_mat[i][wi])
-
-            trainq1_s_input[i][wi] = word_vec1
-            trainq2_s_input[i][wi] = word_vec2
-
-    print "TRAIN Extraction ends!"
-    '''
-
-
-
-    #TEST DATA
-    # print "TEST Extraction begins!"
-    # testQ1_mat = np.asarray([pad_to_length(np.array(ex.indexed_q1), seq_max_len) for ex in test_exs])
-    # testQ2_mat = np.asarray([pad_to_length(np.array(ex.indexed_q2), seq_max_len) for ex in test_exs])
-    # testQ1_seq_lens = np.array([len(ex.indexed_q1) for ex in test_exs])
-    # testQ2_seq_lens = np.array([len(ex.indexed_q2) for ex in test_exs])    
-
-    # ## Labels
-    # test_labels_arr = np.array([ex.label for ex in test_exs])
 
     ## Matrix with seq word indices and word vectors
     dim = len(word_embeddings.get_embedding_byidx(0))
@@ -363,7 +317,7 @@ def train_bench2(train_exs, test_exs, word_embeddings):
     hidden_dim = 30
     num_classes = 2
     num_cells = 100
-    
+
     #embedding_size = feat_vec_size
 
     # We're using 2 classes. What's presented here is multi-class code that can scale to more classes, though
