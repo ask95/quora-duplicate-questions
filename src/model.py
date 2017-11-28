@@ -246,37 +246,37 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
         
         # Evaluate on the test set
-            test_correct = 0
-            for ex_idx in xrange(0, len(test_exs)):
-                # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
-                # quantities from the running of the computation graph, namely the probabilities, prediction, and z
-                # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
-                #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
-                #                                                                    label: np.array([test_exs[ex_idx].label]),
-                #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
-                #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
-                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                                                                                  feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
-                                                                                    q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
-                                                                                   label: np.array([test_exs[ex_idx].label]),
-                                                                                   q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
-                                                                                   q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
-                if ex_idx % 50 == 0:
-                    print probs_this_instance, pred_this_instance
-                    print pred_this_instance[0], test_exs[ex_idx].label
-                
-                if (test_exs[ex_idx].label == pred_this_instance[0]):
-                    test_correct += 1
-                    #print test_correct
-            # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
-            #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
-            # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            str2 =  1.0*test_correct/len(test_exs)
-            print str1
-            print str2
-            return str(i), str1, str(str2)
+        test_correct = 0
+        for ex_idx in xrange(0, len(test_exs)):
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, prediction, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+            [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                                              feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
+                                                                                q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
+                                                                               label: np.array([test_exs[ex_idx].label]),
+                                                                               q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
+                                                                               q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
+            if ex_idx % 50 == 0:
+                print probs_this_instance, pred_this_instance
+                print pred_this_instance[0], test_exs[ex_idx].label
+            
+            if (test_exs[ex_idx].label == pred_this_instance[0]):
+                test_correct += 1
+                #print test_correct
+        # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
+        #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
+        # print "  Hidden layer activations for this example: " + repr(z_this_instance)
+        str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+        str2 =  1.0*test_correct/len(test_exs)
+        print str1
+        print str2
+        return str1, str(str2)
 
 def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
@@ -468,37 +468,37 @@ def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
         
         # Evaluate on the test set
-            test_correct = 0
-            for ex_idx in xrange(0, len(test_exs)):
-                # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
-                # quantities from the running of the computation graph, namely the probabilities, prediction, and z
-                # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
-                #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
-                #                                                                    label: np.array([test_exs[ex_idx].label]),
-                #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
-                #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
-                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                                                                                  feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
-                                                                                    q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
-                                                                                   label: np.array([test_exs[ex_idx].label]),
-                                                                                   q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
-                                                                                   q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
-                if ex_idx % 500 == 0:
-                    print probs_this_instance, pred_this_instance
-                    print pred_this_instance[0], test_exs[ex_idx].label
-                
-                if (test_exs[ex_idx].label == pred_this_instance[0]):
-                    test_correct += 1
-                    #print test_correct
-            # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
-            #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
-            # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            str2 =  1.0*test_correct/len(test_exs)
-            print str1
-            print str2
-            return str(i), str1, str(str2)
+        test_correct = 0
+        for ex_idx in xrange(0, len(test_exs)):
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, prediction, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+            [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                                              feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
+                                                                                q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
+                                                                               label: np.array([test_exs[ex_idx].label]),
+                                                                               q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
+                                                                               q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
+            if ex_idx % 500 == 0:
+                print probs_this_instance, pred_this_instance
+                print pred_this_instance[0], test_exs[ex_idx].label
+            
+            if (test_exs[ex_idx].label == pred_this_instance[0]):
+                test_correct += 1
+                #print test_correct
+        # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
+        #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
+        # print "  Hidden layer activations for this example: " + repr(z_this_instance)
+        str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+        str2 =  1.0*test_correct/len(test_exs)
+        print str1
+        print str2
+        return str1, str(str2)
 
 
 
