@@ -23,7 +23,7 @@ def pad(seq, length):
     return result
 
 
-def train_bench1(train_exs, test_exs, word_embeddings):
+def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 258
@@ -172,10 +172,10 @@ def train_bench1(train_exs, test_exs, word_embeddings):
 
 
     decay_steps = 100
-    learning_rate_decay_factor = 0.995
+    #learning_rate_decay_factor = 0.995
     global_step = tf.contrib.framework.get_or_create_global_step()
     # Smaller learning rates are sometimes necessary for larger networks
-    initial_learning_rate = 0.01
+    #initial_learning_rate = 0.01
     # Decay the learning rate exponentially based on the number of steps.
     lr = tf.train.exponential_decay(initial_learning_rate,
                                     global_step,
@@ -272,10 +272,13 @@ def train_bench1(train_exs, test_exs, word_embeddings):
             # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
             #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
             # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-            print repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            print 1.0*test_correct/len(test_exs)
+            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+            str2 =  1.0*test_correct/len(test_exs)
+            print str1
+            print str2
+            return str1, str2
 
-def train_bench2(train_exs, test_exs, word_embeddings):
+def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 258
@@ -390,11 +393,11 @@ def train_bench2(train_exs, test_exs, word_embeddings):
 
 
 
-    decay_steps = 1000
-    learning_rate_decay_factor = 0.995
+    decay_steps = 100
+    #learning_rate_decay_factor = 0.995
     global_step = tf.contrib.framework.get_or_create_global_step()
     # Smaller learning rates are sometimes necessary for larger networks
-    initial_learning_rate = 0.01
+    #initial_learning_rate = 0.01
     # Decay the learning rate exponentially based on the number of steps.
     lr = tf.train.exponential_decay(initial_learning_rate,
                                     global_step,
@@ -491,8 +494,11 @@ def train_bench2(train_exs, test_exs, word_embeddings):
             # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
             #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
             # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-            print repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            print 1.0*test_correct/len(test_exs)
+            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+            str2 =  1.0*test_correct/len(test_exs)
+            print str1
+            print str2
+            return str1, str2
 
 
 
