@@ -26,7 +26,7 @@ def pad(seq, length):
 def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
-    seq_max_len = 258
+    seq_max_len = 60
     # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
 
     #TRAINING DATA
@@ -135,8 +135,8 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #initialS = myLSTMcell1.zero_state(1, tf.float32)
     #sent_input = tf.unstack(sent)
     #sent_input = sent
-    output1, _ = tf.nn.dynamic_rnn(myLSTMcell(tf.get_variable_scope().reuse), q1, sequence_length=q1_len, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
-    output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, sequence_length=q2_len, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    output1, _ = tf.nn.dynamic_rnn(myLSTMcell(tf.get_variable_scope().reuse), q1, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
     #print "AKAMATH", output.shape, type(output)
     #z = output[0][-1]
 
@@ -276,12 +276,12 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             str2 =  1.0*test_correct/len(test_exs)
             print str1
             print str2
-            return str1, str2
+            return str(i), str1, str(str2)
 
 def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
-    seq_max_len = 258
+    seq_max_len = 60
     # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
 
     #TRAINING DATA
@@ -347,8 +347,8 @@ def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #initialS = myLSTMcell1.zero_state(1, tf.float32)
     #sent_input = tf.unstack(sent)
     #sent_input = sent
-    output1, _ = tf.nn.dynamic_rnn(myLSTMcell(tf.get_variable_scope().reuse), q1, sequence_length=q1_len, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
-    output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, sequence_length=q2_len, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    output1, _ = tf.nn.dynamic_rnn(myLSTMcell(tf.get_variable_scope().reuse), q1, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
     #print "AKAMATH", output.shape, type(output)
     #z = output[0][-1]
 
@@ -498,7 +498,7 @@ def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             str2 =  1.0*test_correct/len(test_exs)
             print str1
             print str2
-            return str1, str2
+            return str(i), str1, str(str2)
 
 
 
