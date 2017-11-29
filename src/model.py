@@ -813,11 +813,11 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
     z1_1 = tf.reduce_mean(output1[0], axis=1)
     z1_2 = tf.reduce_mean(output1[1], axis=1)
-    z1 = tf.concat([z1_1, z1_2], 0)
+    z1 = tf.concat([z1_1, z1_2], 1)
 
     z2_1 = tf.reduce_mean(output2[0], axis=1)
     z2_2 = tf.reduce_mean(output2[1], axis=1)
-    z2 = tf.concat([z2_1, z2_2], 0)
+    z2 = tf.concat([z2_1, z2_2], 1)
 
     print "hey bro", z1.shape, z2.shape
     
