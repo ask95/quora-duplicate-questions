@@ -808,7 +808,7 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "AKAMATH", output.shape, type(output)
     #z = output[0][-1]
 
-    print output1.shape, output2.shape
+    #print output1.shape, output2.shape
 
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
     z1_1 = tf.reduce_mean(output1[0], axis=1)
