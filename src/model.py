@@ -1206,9 +1206,9 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     ## Matrix with seq word indices and word vectors
     dim = len(word_embeddings.get_embedding_byidx(0))
 
+    
 
-    ## Matrix with seq word indices and word vectors
-    dim = len(word_embeddings.get_embedding_byidx(0))
+
     #testq1_s_input = #np.zeros([len(test_exs), seq_max_len, dim])
     #testq2_s_input = np.zeros([len(test_exs), seq_max_len, dim])
 
@@ -1243,14 +1243,18 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     # DEFINING THE COMPUTATION GRAPH
 
-    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
     label = tf.placeholder(tf.int32, None)
     q1_len = tf.placeholder(tf.int32, None)
     q2_len = tf.placeholder(tf.int32, None)
 
-    
+    embeddings = tf.Variable(word_embeddings.vectors)
+    print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
 
+    print q1
     def myLSTMcell(Preuse):
         lstm = tf.nn.rnn_cell.LSTMCell(num_cells, reuse=Preuse) #tf.get_variable_scope().reuse)
         return lstm
@@ -1266,7 +1270,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "AKAMATH", output.shape, type(output)
     #z = output[0][-1]
 
-    print "anikesh says hi! ",output1.shape, output2.shape
+    print "anikesh says hi", output1.shape, output2.shape
 
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
     z1 = tf.reduce_mean(output1, axis=1)
@@ -1298,7 +1302,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     probs = tf.nn.softmax(tf.tensordot(lyr_1, W_2, 1))
 
     one_best = tf.argmax(probs, axis=1)
-    print "hey sexy", tf.shape(probs)
+    #print "hey sexy", tf.shape(probs)
     label_onehot = tf.one_hot(label, num_classes)
     #print tf.shape(probs)[0], tf.shape(label_onehot)[0]
     
@@ -1342,7 +1346,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     # to a particular session
     with tf.Session() as sess:
         # Write a logfile to the logs/ directory, can use Tensorboard to view this
-        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
         # Initialize variables
@@ -1365,14 +1369,15 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 for b in xrange(0, batch_size):
                     #print b
                     curr_idx = ex_idx * batch_size + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
+                    q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
                 
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {q1: q1_,
-                                                                                    q2: q2_,
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                                                                                    _q2: q2_,
                                                                                    label: np.array(label_),
                                                                                    q2_len: np.array(q2_sq_len_), 
                                                                                    q1_len: np.array(q1_sq_len_)})
@@ -1393,8 +1398,8 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
             #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
             [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                                                                              feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
-                                                                                q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
+                                                                              feed_dict={_q1: [pad(test_exs[ex_idx].indexed_q1, seq_max_len)], #[testq1_s_input[ex_idx]],
+                                                                                _q2: [pad(test_exs[ex_idx].indexed_q2, seq_max_len)],
                                                                                label: np.array([test_exs[ex_idx].label]),
                                                                                q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
@@ -1413,14 +1418,3 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         print str1
         print str2
         return str(str1)+ "\t" + str(str2)
-
-
-
-
-
-
-
-
-
-
-
