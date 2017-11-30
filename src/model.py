@@ -16,10 +16,13 @@ def pad_to_length(np_arr, length):
 
 def pad(seq, length):
     seq = np.asarray(seq)
+    #print np.size(seq)
+    #print np.size(seq, 0)
+
     if length < np.size(seq, 0):
-        return seq[:length, :]
-    result = np.zeros((length, np.size(seq, 1)))
-    result[0:seq.shape[0], :] = seq
+        return seq[:length]
+    result = np.zeros(length)
+    result[0:seq.shape[0]] = seq
     return result
 
 
@@ -1013,17 +1016,18 @@ def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     # DEFINING THE COMPUTATION GRAPH
 
-    _q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    _q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
     label = tf.placeholder(tf.int32, None)
     q1_len = tf.placeholder(tf.int32, None)
     q2_len = tf.placeholder(tf.int32, None)
 
     embeddings = tf.Variable(word_embeddings.vectors)
-    q1 = tf.nn.embedding_lookup(embeddings, _q1)
-    q2 = tf.nn.embedding_lookup(embeddings, _q2)
+    print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
 
-
+    print q1
     def myLSTMcell(Preuse):
         lstm = tf.nn.rnn_cell.LSTMCell(num_cells, reuse=Preuse) #tf.get_variable_scope().reuse)
         return lstm
@@ -1071,7 +1075,7 @@ def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     probs = tf.nn.softmax(tf.tensordot(lyr_1, W_2, 1))
 
     one_best = tf.argmax(probs, axis=1)
-    print "hey sexy", tf.shape(probs)
+    #print "hey sexy", tf.shape(probs)
     label_onehot = tf.one_hot(label, num_classes)
     #print tf.shape(probs)[0], tf.shape(label_onehot)[0]
     
@@ -1115,7 +1119,7 @@ def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     # to a particular session
     with tf.Session() as sess:
         # Write a logfile to the logs/ directory, can use Tensorboard to view this
-        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
         # Initialize variables
@@ -1139,6 +1143,7 @@ def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     #print b
                     curr_idx = ex_idx * batch_size + b
                     q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+		    #print q1_[0]
                     q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
