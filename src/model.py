@@ -1196,7 +1196,6 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 60
-    #tseq_max_len = tf.constant(60)
     # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
 
     #TRAINING DATA
@@ -1249,7 +1248,6 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     label = tf.placeholder(tf.int32, None)
     q1_len = tf.placeholder(tf.int32, None)
     q2_len = tf.placeholder(tf.int32, None)
-    tseq_max_len = tf.placeholder(tf.int32, None)
 
     embeddings = tf.Variable(word_embeddings.vectors)
     print _q1
@@ -1278,23 +1276,37 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #if q1_len >= seq_max_len:
     #reshape(t, [])
     def less_than(output, q_len):
-        output = tf.reshape(output, [seq_max_len, -1, num_cells])
+        output = tf.reshape(output, [seq_max_len, -1, output.shape[2]])
         output = output[:q_len]
-        output = tf.reshape(output, [-1, q_len, num_cells])
+        output = tf.reshape(output, [-1, q_len, output.shape[2]])
         return tf.reduce_mean(output, axis=1)
 
     def greateqthan(output):
-        return tf.reduce_mean(output, axis=1)
+        return tf.reduce_mean(output1, axis=1)
 
-    def greato1(): return greateqthan(output1)
-    def greato2(): return greateqthan(output2)
-    def lesso1(): return less_than(output1, q1_len)
-    def lesso2(): return less_than(output2, q2_len)
 
-    print "namaste", q1_len, q2_len, tseq_max_len
 
-    z1 = tf.cond(tf.greater_equal(q1_len, tseq_max_len), greato1, lesso1)
-    z2 = tf.cond(tf.greater_equal(q2_len, tseq_max_len), greato2, lesso2)
+    '''
+    if bool(tf.greater_equal(q1_len, seq_max_len).eval()):
+        z1 = tf.reduce_mean(output1, axis=1)
+    else:
+        output1 = tf.reshape(output1, [seq_max_len, -1, output1.shape[2]])
+        output1 = output1[:q1_len]
+        output1 = tf.reshape(output1, [-1, q1_len, output1.shape[2]])
+        z1 = tf.reduce_mean(output1, axis=1)
+
+    if bool(tf.greater_equal(q2_len, seq_max_len).eval()):
+        z2 = tf.reduce_mean(output2, axis=1)
+    else:
+        output2 = tf.reshape(output2, [seq_max_len, -1, output2.shape[2]])
+        output2 = output2[:q2_len]
+        output2 = tf.reshape(output2, [-1, q2_len, output2.shape[2]])
+        z2 = tf.reduce_mean(output2, axis=1)
+    '''
+    
+    z1 = tf.divide(tf.reduce_sum(outputs1, axis=1), tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
+    z2 = tf.divide(tf.reduce_sum(outputs2, axis=1), tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
+
 
     print "hey bro", z1.shape, z2.shape
     
@@ -1385,7 +1397,6 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 label_ = []
                 q1_sq_len_ = []
                 q2_sq_len_ = []
-                tseq_max = []
 
                 for b in xrange(0, batch_size):
                     #print b
@@ -1396,14 +1407,12 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
-                    tseq_max.append(seq_max_len)
                 
                 [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
                                                                                     _q2: q2_,
                                                                                    label: np.array(label_),
                                                                                    q2_len: np.array(q2_sq_len_), 
-                                                                                   q1_len: np.array(q1_sq_len_),
-                                                                                   tseq_max_len: np.array(tseq_max)})
+                                                                                   q1_len: np.array(q1_sq_len_)})
 
                 step_idx += 1
                 loss_this_iter += loss_this_instance
@@ -1425,8 +1434,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                                                                                 _q2: [pad(test_exs[ex_idx].indexed_q2, seq_max_len)],
                                                                                label: np.array([test_exs[ex_idx].label]),
                                                                                q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
-                                                                               q1_len: np.array([len(test_exs[ex_idx].indexed_q1)]),
-                                                                               tseq_max_len: np.array([seq_max_len])}) 
+                                                                               q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
             if ex_idx % 500 == 0:
                 print probs_this_instance, pred_this_instance
                 print pred_this_instance[0], test_exs[ex_idx].label
