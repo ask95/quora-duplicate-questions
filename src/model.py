@@ -1276,9 +1276,9 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #if q1_len >= seq_max_len:
     #reshape(t, [])
     def less_than(output, q_len):
-        output = tf.reshape(output, [seq_max_len, -1, output.shape[2]])
+        output = tf.reshape(output, [seq_max_len, -1, num_cells])
         output = output[:q_len]
-        output = tf.reshape(output, [-1, q_len, output.shape[2]])
+        output = tf.reshape(output, [-1, q_len, num_cells])
         return tf.reduce_mean(output, axis=1)
 
     def greateqthan(output):
