@@ -1273,8 +1273,21 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print "anikesh says hi", output1.shape, output2.shape
 
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
-    z1 = tf.reduce_mean(output1, axis=1)
-    z2 = tf.reduce_mean(output2, axis=1)
+    if q1_len >= seq_max_len:
+        z1 = tf.reduce_mean(output1, axis=1)
+    else:
+        output1 = tf.reshape(output1, [seq_max_len, -1, output1.shape[2]])
+        output1 = output1[:q1_len]
+        output1 = tf.reshape(output1, [-1, q1_len, output1.shape[2]])
+        z1 = tf.reduce_mean(output1, axis=1)
+
+    if q2_len >= seq_max_len:
+        z2 = tf.reduce_mean(output2, axis=1)
+    else:
+        output2 = tf.reshape(output2, [seq_max_len, -1, output2.shape[2]])
+        output2 = output2[:q2_len]
+        output2 = tf.reshape(output2, [-1, q2_len, output2.shape[2]])
+        z2 = tf.reduce_mean(output2, axis=1)
 
     print "hey bro", z1.shape, z2.shape
     
