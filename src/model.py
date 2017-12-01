@@ -1196,6 +1196,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 60
+    tseq_max_len = tf.constant(60)
     # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
 
     #TRAINING DATA
@@ -1291,8 +1292,8 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
 
 
-    z1 = tf.cond(tf.greater_equal(q1_len, seq_max_len), greato1, lesso1)
-    z2 = tf.cond(tf.greater_equal(q2_len, seq_max_len), greato2, lesso2)
+    z1 = tf.cond(tf.greater_equal(q1_len, tseq_max_len), greato1, lesso1)
+    z2 = tf.cond(tf.greater_equal(q2_len, tseq_max_len), greato2, lesso2)
 
     print "hey bro", z1.shape, z2.shape
     
