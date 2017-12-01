@@ -1112,14 +1112,14 @@ def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     # RUN TRAINING AND TEST
     # Initializer; we need to run this first to initialize variables
     init = tf.global_variables_initializer()
-    num_epochs = 10
+    num_epochs = 15
     merged = tf.summary.merge_all()  # merge all the tensorboard variables
     # The computation graph must be run in a particular Tensorflow "session". Parameters, etc. are localized to the
     # session (unless you pass them around outside it). All runs of a computation graph with certain values are relative
     # to a particular session
     with tf.Session() as sess:
         # Write a logfile to the logs/ directory, can use Tensorboard to view this
-        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
         # Initialize variables
@@ -1234,6 +1234,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     hidden_dim = 30
     num_classes = 2
     num_cells = 100
+    lstm_size = num_cells
 
     #embedding_size = feat_vec_size
 
@@ -1304,8 +1305,8 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         z2 = tf.reduce_mean(output2, axis=1)
     '''
     
-    z1 = tf.divide(tf.reduce_sum(outputs1, axis=1), tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
-    z2 = tf.divide(tf.reduce_sum(outputs2, axis=1), tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
+    z1 = tf.divide(tf.reduce_sum(output1, axis=1), tf.tile(tf.expand_dims(tf.cast(q1_len, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
+    z2 = tf.divide(tf.reduce_sum(output2, axis=1), tf.tile(tf.expand_dims(tf.cast(q2_len, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
 
     print "hey bro", z1.shape, z2.shape
     
@@ -1377,7 +1378,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     # to a particular session
     with tf.Session() as sess:
         # Write a logfile to the logs/ directory, can use Tensorboard to view this
-        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
         # Initialize variables
