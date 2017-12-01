@@ -1275,7 +1275,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
     #if q1_len >= seq_max_len:
     #reshape(t, [])
-    if bool(tf.reshape(tf.greater_equal(q1_len, seq_max_len), [])):
+    if tf.equal(tf.greater_equal(q1_len, seq_max_len), tf.constant(1)):
         z1 = tf.reduce_mean(output1, axis=1)
     else:
         output1 = tf.reshape(output1, [seq_max_len, -1, output1.shape[2]])
@@ -1283,7 +1283,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         output1 = tf.reshape(output1, [-1, q1_len, output1.shape[2]])
         z1 = tf.reduce_mean(output1, axis=1)
 
-    if bool(tf.reshape(tf.greater_equal(q2_len, seq_max_len), [])):
+    if tf.equal(tf.greater_equal(q2_len, seq_max_len), tf.constant(1)):
         z2 = tf.reduce_mean(output2, axis=1)
     else:
         output2 = tf.reshape(output2, [seq_max_len, -1, output2.shape[2]])
