@@ -1307,7 +1307,6 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     z1 = tf.divide(tf.reduce_sum(outputs1, axis=1), tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
     z2 = tf.divide(tf.reduce_sum(outputs2, axis=1), tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
 
-
     print "hey bro", z1.shape, z2.shape
     
     #combining the LSTM representation of the 2 questions
