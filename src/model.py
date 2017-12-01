@@ -1284,8 +1284,15 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     def greateqthan(output):
         return tf.reduce_mean(output, axis=1)
 
-    z1 = tf.cond(tf.greater_equal(q1_len, seq_max_len), lambda: greateqthan(output1), lambda: less_than(output1, q1_len))
-    z2 = tf.cond(tf.greater_equal(q2_len, seq_max_len), lambda: greateqthan(output2), lambda: less_than(output2, q2_len))
+    def greato1(): return greateqthan(output1)
+    def greato2(): return greateqthan(output2)
+    def lesso1(): return less_than(output1, q1_len)
+    def lesso2(): return less_than(output2, q2_len)
+
+
+
+    z1 = tf.cond(tf.greater_equal(q1_len, seq_max_len), greato1, lesso1)
+    z2 = tf.cond(tf.greater_equal(q2_len, seq_max_len), greato2, lesso2)
 
     print "hey bro", z1.shape, z2.shape
     
