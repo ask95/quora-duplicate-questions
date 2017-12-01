@@ -1290,7 +1290,7 @@ def train_bench6(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     def lesso1(): return less_than(output1, q1_len)
     def lesso2(): return less_than(output2, q2_len)
 
-
+    print "namaste", q1_len, q2_len, tseq_max_len
 
     z1 = tf.cond(tf.greater_equal(q1_len, tseq_max_len), greato1, lesso1)
     z2 = tf.cond(tf.greater_equal(q2_len, tseq_max_len), greato2, lesso2)
