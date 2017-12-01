@@ -16,7 +16,7 @@ if __name__ == '__main__':
     word_vectors = read_word_embeddings("/u/akamath/Documents/quora-duplicate-questions/data/glove.6B.300d-relativized.txt")
 
     # Load train, dev, and test exs
-    exs = read_and_index(data_path + "mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
+    exs = read_and_index(data_path + "1mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
     train_exs, test_exs = train_test_split(exs, test_size=0.3)
     #df = pd.read_csv('C:/Dataset.csv')
     #df['split'] = np.random.randn(df.shape[0], 1)
@@ -25,7 +25,6 @@ if __name__ == '__main__':
     #test_exs = read_and_index(data_path + "test.tsv", word_vectors.word_indexer)
 
     print repr(len(train_exs)) + " / " + repr(len(test_exs)) + " train/dev/test examples"
-    test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors)
 
 
     if len(sys.argv) >= 2:
@@ -33,10 +32,18 @@ if __name__ == '__main__':
     else:
         system_to_run = "BENCH1"
     if system_to_run == "BENCH1":
-        test_exs_predicted = train_bench1(train_exs, test_exs, word_vectors)
+        test_exs_predicted = train_bench1(train_exs, test_exs, word_vectors, 0.1, 0.95)
         #write_sentiment_examples(test_exs_predicted, "test-blind.output.txt", word_vectors.word_indexer)
     elif system_to_run == "BENCH2":
-        test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors)
+        test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors, 0.1, 0.95)
+    elif system_to_run == "BENCH3":
+        test_exs_predicted = train_bench3(train_exs, test_exs, word_vectors, 0.1, 0.995)
+    elif system_to_run == "BENCH4":
+        test_exs_predicted = train_bench4(train_exs, test_exs, word_vectors, 0.1, 0.995)
+    elif system_to_run == "BENCH5":
+        test_exs_predicted = train_bench5(train_exs, test_exs, word_vectors, 0.1, 0.95)
+    elif system_to_run == "BENCH6":
+        test_exs_predicted = train_bench6(train_exs, test_exs, word_vectors, 0.1, 0.95)
     # elif system_to_run == "BENCH2":
     #     test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors)
     # elif system_to_run == "FANCY3":
