@@ -1743,7 +1743,7 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print q1
     def myLSTMcell(Preuse):
         lstm = tf.nn.rnn_cell.LSTMCell(num_cells, reuse=Preuse) #tf.get_variable_scope().reuse)
-        return lstm
+        return tf.nn.rnn_cell.DropoutWrapper(lstm, output_keep_prob=tf.constant(0.75))
 
     #myLSTMcell1 = myLSTMcell()
     #myLSTMcell2 = myLSTMcell()
@@ -1795,7 +1795,7 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     loss = tf.losses.softmax_cross_entropy(label_onehot, probs)
 
-    beta1, beta2 = 0.01
+    beta1, beta2 = 0.01, 0.01
     reg1 = tf.nn.l2_loss(W)
     reg2 = tf.nn.l2_loss(W_2)
     loss = tf.reduce_mean(loss + beta1*reg1 + beta2*reg2)
