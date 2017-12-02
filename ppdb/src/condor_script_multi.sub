@@ -1,0 +1,49 @@
+universe = vanilla 
+Initialdir = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src
+Executable = /lusr/bin/bash
++Group   = "GRAD"
++Project = "AI_ROBOTICS"
++ProjectDescription = "Quora duplicate question detection (course project)"
+Requirements = TARGET.GPUSlot
+getenv = True
+request_GPUs = 1
++GPUJob = true 
+Notification = Never
+
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.1 1000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.1_1000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.1_1000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.1_1000_0.95
+Queue
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.01 1000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.01_1000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.01_1000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.01_1000_0.95
+Queue
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.001 1000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.001_1000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.001_1000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.001_1000_0.95
+Queue
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.1 10000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.1_10000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.1_10000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.1_10000_0.95
+Queue
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.01 10000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.01_10000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.01_10000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.01_10000_0.95
+Queue
+
+Arguments = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/run_job.sh 0.001 10000 0.95
+Log = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.log.ppdb100k_0.001_10000_0.95
+Error = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.err.ppdb100k_0.001_10000_0.95
+Output = /scratch/cluster/pgoyal/NLP/repo/quora-duplicate-questions/ppdb/src/condor.out.ppdb100k_0.001_10000_0.95
+Queue
+

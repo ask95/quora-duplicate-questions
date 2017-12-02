@@ -51,12 +51,17 @@ def pad(seq, length):
     result[0:seq.shape[0], :] = seq
     return result
 
-def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
+#def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs, lstm_size = 100, initial_learning_rate = 0.001, decay_steps = 1000, learning_rate_decay_factor = 0.95):
+def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor):
     n_classes = 2
-    lstm_size = 100
     seq_max_len = 50
     batch_size = 256
     dim = len(word_vectors.get_embedding_byidx(0))
+
+    #lstm_size = 100
+    #initial_learning_rate = 0.001
+    #decay_steps = 1000
+    #learning_rate_decay_factor = 0.95
 
     #defining the computation graph
     q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
@@ -87,10 +92,7 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
     loss = tf.losses.softmax_cross_entropy(label_onehot, probs)
 
     # training algorithm parameters
-    decay_steps = 1000
-    learning_rate_decay_factor = 0.95
     global_step = tf.contrib.framework.get_or_create_global_step()
-    initial_learning_rate = 0.001
     lr = tf.train.exponential_decay(initial_learning_rate,
                                     global_step,
                                     decay_steps,
@@ -113,7 +115,7 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
         tf.set_random_seed(0)
         sess.run(init)
 
-        #train_exs = ppdb_pairs + train_exs
+        train_exs = ppdb_pairs + train_exs
         for i in range(0, n_epochs):
             step_idx = 0
             print 'Epoch:', i,
@@ -130,10 +132,10 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
                     q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
                     q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
                     label_.append(train_exs[curr_idx].label)
-                    len1_.append(len(train_exs[curr_idx].indexed_q1))
-                    len2_.append(len(train_exs[curr_idx].indexed_q2))
+                    len1_.append(max(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
+                    len2_.append(max(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
 
-                [_, loss_this_instance, summary, z1_, z2_, probs_, prediction_, outputs1_, z1_corr_] = sess.run([train_op, loss, merged, z1, z2, probs, prediction, outputs1, z1_corr], feed_dict = {
+                [_, loss_this_instance, summary, z1_, z2_, probs_, prediction_] = sess.run([train_op, loss, merged, z1, z2, probs, prediction], feed_dict = {
                     q1: q1_, 
                     q2: q2_, 
                     label: np.array(label_), 
@@ -141,8 +143,8 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
                     len2: np.array(len2_)})
                 if step_idx % 100 == 0:
                     lr = sess.run(opt._lr)
-                    print 'step:', step_idx, 'of', len(train_exs)/batch_size, ex_idx
-                    #print 'lr:', lr
+                    #print 'step:', step_idx, 'of', len(train_exs)/batch_size, ex_idx
+                    #print 'step:', step_idx, 'lr:', lr
                     #print 'z1:', np.linalg.norm(z1_)
                     #print 'z2:', np.linalg.norm(z2_)
                     #print 'probs:', probs_
@@ -163,8 +165,8 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
                     curr_idx = ex_idx * batch_size_pred + b
                     q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
                     q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(len(train_exs[curr_idx].indexed_q1))
-                    len2_.append(len(train_exs[curr_idx].indexed_q2))
+                    len1_.append(max(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
+                    len2_.append(max(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
 
                 [pred_this_instance] = sess.run([prediction], feed_dict = {
                     q1: q1_, 
@@ -192,8 +194,8 @@ def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs):
                     curr_idx = ex_idx * batch_size_pred + b
                     q1_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q1), seq_max_len))
                     q2_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(len(test_exs[curr_idx].indexed_q1))
-                    len2_.append(len(test_exs[curr_idx].indexed_q2))
+                    len1_.append(max(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
+                    len2_.append(max(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
 
                 [pred_this_instance] = sess.run([prediction], feed_dict = {
                     q1: q1_, 
