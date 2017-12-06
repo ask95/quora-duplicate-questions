@@ -105,6 +105,17 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     print "TEST Extraction ends!"
 
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
+    label = tf.placeholder(tf.int32, None)
+    q1_len = tf.placeholder(tf.int32, None)
+    q2_len = tf.placeholder(tf.int32, None)
+
+    embeddings = tf.Variable(word_embeddings.vectors)
+    print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
+
 
 
     
@@ -120,11 +131,11 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     # DEFINING THE COMPUTATION GRAPH
 
-    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    label = tf.placeholder(tf.int32, None)
-    q1_len = tf.placeholder(tf.int32, None)
-    q2_len = tf.placeholder(tf.int32, None)
+    # q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    # q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    # label = tf.placeholder(tf.int32, None)
+    # q1_len = tf.placeholder(tf.int32, None)
+    # q2_len = tf.placeholder(tf.int32, None)
 
     num_cells = 100
 
