@@ -249,8 +249,8 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
                 
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {q1: q1_,
-                                                                                    q2: q2_,
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                                                                                    _q2: q2_,
                                                                                    label: np.array(label_),
                                                                                    q2_len: np.array(q2_sq_len_), 
                                                                                    q1_len: np.array(q1_sq_len_)})
