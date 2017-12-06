@@ -271,13 +271,13 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
                 for b in xrange(0, batch_test):
                 #print b
-                curr_idx = ex_idx * batch_test + b
-                q1_.append(pad(test_exs[curr_idx].indexed_q1, seq_max_len))
+                    curr_idx = ex_idx * batch_test + b
+                    q1_.append(pad(test_exs[curr_idx].indexed_q1, seq_max_len))
             #print q1_[0]
-                q2_.append(pad(test_exs[curr_idx].indexed_q2, seq_max_len))
-                label_.append(test_exs[curr_idx].label)
-                q1_sq_len_.append(len(test_exs[curr_idx].indexed_q1))
-                q2_sq_len_.append(len(test_exs[curr_idx].indexed_q2))
+                    q2_.append(pad(test_exs[curr_idx].indexed_q2, seq_max_len))
+                    label_.append(test_exs[curr_idx].label)
+                    q1_sq_len_.append(len(test_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(test_exs[curr_idx].indexed_q2))
             # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
             # quantities from the running of the computation graph, namely the probabilities, prediction, and z
             # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
@@ -294,19 +294,19 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                                                                                                q1_len: np.array(q1_sq_len_)}) 
                 #print len(test_exs)
                 for b in xrange(0, len(pred_this_instance)):
-                curr_idx = ex_idx * batch_test + b
+                    curr_idx = ex_idx * batch_test + b
                 #print curr_idx
-                if (test_exs[curr_idx].label == pred_this_instance[b]):
-                    test_correct += 1
+                    if (test_exs[curr_idx].label == pred_this_instance[b]):
+                        test_correct += 1
 
                 #print test_correct
             # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
             #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
             # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            str2 =  1.0*test_correct/len(test_exs)
-        print str1
-        print str2
+                str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+                str2 =  1.0*test_correct/len(test_exs)
+                print str1
+                print str2
 
 
 def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
