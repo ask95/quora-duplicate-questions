@@ -53,7 +53,7 @@ def pad(seq, length):
     return result
 
 #def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs, lstm_size = 100, initial_learning_rate = 0.001, decay_steps = 1000, learning_rate_decay_factor = 0.95):
-def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor, variant, scaling_factor):
+def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor, variant, scaling_factor):
     n_classes = 2
     seq_max_len = 50
     batch_size = 256
@@ -223,6 +223,35 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, test_exs, lstm_size,
             print 'Train accuracy', 
             #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
             print 100.0*train_correct / len(train_exs),
+
+            # evaluate
+            valid_correct = 0
+            batch_size_pred = 100
+            for ex_idx in xrange(0, len(valid_exs)/batch_size_pred):
+                q1_ = []
+                q2_ = []
+                len1_ = []
+                len2_ = []
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    q1_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q1), seq_max_len))
+                    q2_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q2), seq_max_len))
+                    len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
+                    len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
+
+                [pred_this_instance] = sess.run([prediction], feed_dict = {
+                    q1: q1_, 
+                    q2: q2_,
+                    len1: np.array(len1_),
+                    len2: np.array(len2_)})
+                #print valid_exs[ex_idx].label, pred_this_instance[0]
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    if (valid_exs[curr_idx].label == pred_this_instance[b]):
+                        valid_correct += 1
+            print 'Valid accuracy',
+            #print repr(valid_correct) + '/' + repr(len(valid_exs)) + ' correct after validing'
+            print 100.0*valid_correct / len(valid_exs),
 
             # evaluate
             test_correct = 0

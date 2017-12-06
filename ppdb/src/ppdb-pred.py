@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 from data_gen import *
-from random import shuffle
+#from random import shuffle
+import random
 #from sklearn.cross_validation import train_test_split
 from model import *
 #question_pairs_file = sys.argv[1]
@@ -26,13 +27,13 @@ ppdb = read_and_index_ppdb('../data/all_pairs_100k.txt', word_vectors.word_index
 #raw_input()
 
 def train_valid_test_split(exs):
-    shuffle(exs)
+    random.Random(17).shuffle(exs)
     n = len(exs)
-    s1 = n * 0.6
-    s2 = n * 0.8
-    return (exs[int(test_size * n):], exs[:int(test_size * n)])
+    s1 = int(n * 0.6)
+    s2 = int(n * 0.8)
+    return (exs[:s1], exs[s1:s2], exs[s2:])
 
-train_exs, test_exs = train_test_split(exs, test_size=0.3)
+train_exs, valid_exs, test_exs = train_valid_test_split(exs)
 print len(train_exs), 'examples from Quora dataset.'
 print len(ppdb), 'examples from PPDB.'
 
@@ -45,5 +46,5 @@ print len(ppdb), 'examples from PPDB.'
 #print args.lstm_size
 
 #lstm_model = train_lstm_model(train_exs, word_vectors, ppdb, test_exs)
-lstm_model = train_lstm_model(train_exs, word_vectors, ppdb, test_exs, args.lstm_size, args.lr, args.lr_step, args.lr_decay, args.variant, args.scaling)
+lstm_model = train_lstm_model(train_exs, word_vectors, ppdb, valid_exs, test_exs, args.lstm_size, args.lr, args.lr_step, args.lr_decay, args.variant, args.scaling)
 
