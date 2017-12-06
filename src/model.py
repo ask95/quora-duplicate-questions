@@ -243,8 +243,8 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 for b in xrange(0, batch_size):
                     #print b
                     curr_idx = ex_idx * batch_size + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
+                    q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+                    q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
