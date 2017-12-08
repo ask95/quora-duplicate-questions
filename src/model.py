@@ -225,12 +225,14 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
+	saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
         # Initialize variables
         sess.run(init)
         step_idx = 0
-        saver = tf.train.Saver()
+        #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
         for i in range(0, num_epochs):
             step_idx = 0
+	    #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
             print "Epoch:", i
             loss_this_iter = 0
             # batch_size of 1 here; if we want bigger batches, we need to build our network appropriately
@@ -308,9 +310,10 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             # print "  Hidden layer activations for this example: " + repr(z_this_instance)
             str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
             str2 =  1.0*test_correct/len(test_exs)
-            saver.save(sess, str(name)+'bench1_epoch', global_step=num_epochs)
+            #saver.save(sess, str(name)+'bench1_epoch', global_step=i)
             print str1
             print str2
+	saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
 
 def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
@@ -1874,7 +1877,7 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         tf.set_random_seed(0)
         # Initialize variables
         sess.run(init)
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
         step_idx = 0
         for i in range(0, num_epochs):
 		step_idx = 0
@@ -1945,19 +1948,20 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                                                                                                q1_len: np.array(q1_sq_len_)}) 
     		    #print len(test_exs)
     		    for b in xrange(0, len(pred_this_instance)):
-                    curr_idx = ex_idx * batch_test + b
-                    if (test_exs[curr_idx].label == pred_this_instance[b]):
-                        test_correct += 1
+                    	curr_idx = ex_idx * batch_test + b
+                    	if (test_exs[curr_idx].label == pred_this_instance[b]):
+                        	test_correct += 1
 
     			#print test_correct
     		# print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
     		#       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
     		# print "  Hidden layer activations for this example: " + repr(z_this_instance)
     		str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-            saver.save(sess, str(name)+'bench7_epoch', global_step=num_epochs)
+           	#saver.save(sess, str(name)+'bench7_epoch', global_step=i)
     		str2 =  1.0*test_correct/len(test_exs)
     		print str1
     		print str2
+	saver.save(sess, str(name)+'bench7_epoch', global_step=10)
 		#print str(str1)+ "\t" + str(str2)
 
 
