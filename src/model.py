@@ -225,7 +225,7 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         # Generally want to determinize training as much as possible
         tf.set_random_seed(0)
-	saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+	#saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
         # Initialize variables
         sess.run(init)
         step_idx = 0
@@ -267,6 +267,9 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         # Evaluate on the test set
             test_correct = 0
             batch_test = 100
+            if i == num_epochs - 1:
+                f = open(str(name)+"bench1.txt", "w+")
+
             for ex_idx in xrange(0, len(test_exs)/batch_test):
                 q1_ = []
                 q2_ = []
@@ -304,6 +307,11 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     if (test_exs[curr_idx].label == pred_this_instance[b]):
                         test_correct += 1
 
+                    if i == num_epochs - 1:
+                        f.write(pred_this_instance[b])
+
+
+
                 #print test_correct
             # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
             #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
@@ -313,7 +321,10 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             #saver.save(sess, str(name)+'bench1_epoch', global_step=i)
             print str1
             print str2
-	saver.save(sess, str(name)+'bench1_epoch', global_step=10)
+
+            if i == num_epochs - 1:
+                f.write(pred_this_instance[b])
+	#saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
 
 def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
@@ -1877,7 +1888,7 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         tf.set_random_seed(0)
         # Initialize variables
         sess.run(init)
-        saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+        #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
         step_idx = 0
         for i in range(0, num_epochs):
 		step_idx = 0
@@ -1916,6 +1927,9 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             # Evaluate on the test set
     		test_correct = 0
     		batch_test = 100
+            if i == num_epochs -1:
+                f= open(str(name)+"bench7.txt","w+")
+
     		for ex_idx in xrange(0, len(test_exs)/batch_test):
     		    q1_ = []
     		    q2_ = []
@@ -1952,6 +1966,9 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     	if (test_exs[curr_idx].label == pred_this_instance[b]):
                         	test_correct += 1
 
+                        if i == num_epochs -1:
+                            f.write(pred_this_instance[b])
+
     			#print test_correct
     		# print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
     		#       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
@@ -1961,7 +1978,10 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     		str2 =  1.0*test_correct/len(test_exs)
     		print str1
     		print str2
-	saver.save(sess, str(name)+'bench7_epoch', global_step=10)
+
+            if i == num_epochs -1:
+                f.close() 
+	#saver.save(sess, str(name)+'bench7_epoch', global_step=10)
 		#print str(str1)+ "\t" + str(str2)
 
 
