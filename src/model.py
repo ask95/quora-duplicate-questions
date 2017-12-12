@@ -2062,18 +2062,21 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #combining the LSTM representation of the 2 questions
     #z = tf.concat([z1, z2], 1)
 
-    print "Z's shape is ", z.shape
+    #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     hidden_ff = 1
-    F = tf.get_variable("W", [num_cells, hidden_ff], 
+    F = tf.get_variable("F", [num_cells, hidden_ff], 
         initializer=tf.contrib.layers.xavier_initializer())#seed=0))
-
-    sent1_f = tf.tensordot(output1, F, 1)
+    
     sent2_f = tf.tensordot(output2, F, 1)
+    sent1_f = tf.tensordot(output1, F, 1)
+    print sent1_f
+   # sent2_f = tf.tensordot(output2, F, 1)
 
-    att = tf.tensordot(sent1_f, sent2_f.T, 1)
+    att = tf.tensordot(sent1_f, tf.transpose(sent2_f), 1)
+    #att = tf.transpose(att)
     exp_att = tf.exp(att)
-
+    print exp_att.get_shape() 
     along_a = tf.reduce_sum(exp_att, axis=0)
     along_b = tf.reduce_sum(exp_att, axis=1)
 
@@ -2081,16 +2084,17 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
     unnorm_beta = tf.tensordot(exp_att, output2, 1)
+    print unnorm_beta.shape, along_a.shape
     beta = tf.div(unnorm_beta, along_a)
 
     unnorm_alpha = tf.tensordot(exp_att, output1, 1)
     alpha = tf.div(unnorm_alpha, along_b)
 
-    modif_a = tf.concat(output1, beta, axis=1)
-    modif_b = tf.concat(output2, aplha, axis=1)
+    modif_a = tf.concat((output1, beta), axis=1)
+    modif_b = tf.concat((output2, alpha), axis=1)
 
     hidden_g = 1
-    G = tf.get_variable("W", [num_cells*2, hidden_g], 
+    G = tf.get_variable("G", [num_cells*2, hidden_g], 
         initializer=tf.contrib.layers.xavier_initializer())
 
     V1 = tf.tensordot(modif_a, G, 1)
@@ -2099,8 +2103,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     v1 = tf.reduce_sum(V1, axis=0)
     v2 = tf.reduce_sum(V2, axis=0)
 
-    v = tf.concat(v1, v2, axis=0)
-    H = tf.get_variable("W", [2, num_classes], 
+    v = tf.concat((v1, v2), axis=0)
+    H = tf.get_variable("H", [2, num_classes], 
         initializer=tf.contrib.layers.xavier_initializer())
 
     probs = tf.nn.softmax(tf.tensordot(v, H, 1))
@@ -2198,7 +2202,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             batch_test = 100
             if i == num_epochs - 1:
                 f = open(str(name)+"bench1.txt", "w+")
-        f1 = open("gold_labels.txt", "w+")
+        	f1 = open("gold_labels.txt", "w+")
 
             for ex_idx in xrange(0, len(test_exs)/batch_test):
                 q1_ = []
@@ -2239,7 +2243,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
                     if i == num_epochs - 1:
                         f.write(str(pred_this_instance[b]))
-            f1.write(str(test_exs[curr_idx].label))
+            		f1.write(str(test_exs[curr_idx].label))
 
 
 
@@ -2255,7 +2259,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
             if i == num_epochs - 1:
                 f.close()
-        f1.close()
+        	f1.close()
     #saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
 
