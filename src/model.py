@@ -2071,6 +2071,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     units = 1
     sent1_f = tf.layers.dense(output1, units)
     sent2_f = tf.layers.dense(output2, units)
+
+    print sent1_f.shape, sent2_f.shape
     
     # sent2_f = tf.tensordot(output2, F, 1)
     # sent1_f = tf.tensordot(output1, F, 1)
