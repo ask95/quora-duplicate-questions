@@ -2065,15 +2065,13 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     hidden_ff = 1
-    F = tf.get_variable("F", [hidden_ff, num_cells], 
-        initializer=tf.contrib.layers.xavier_initializer())#seed=0))
+    #F = tf.get_variable("F", [num_cells, hidden_ff], 
+        #initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
     units = 1
-    #sent1_f = tf.layers.dense(output1, units)
-    #sent2_f = tf.layers.dense(output2, units)
+    sent1_f = tf.layers.dense(output1, units)
+    sent2_f = tf.layers.dense(output2, units)
 
-    sent1_f = tf.matmul(output1, F)
-    sent2_f = tf.matmul(output2, F)
     print sent1_f.shape, sent2_f.shape
 
     
@@ -2122,14 +2120,15 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print modif_a.shape, modif_b.shape
 
     hidden_g = 1
-    G = tf.get_variable("G", [hidden_g, num_cells*2], 
+    G = tf.get_variable("G", [num_cells*2, hidden_g], 
         initializer=tf.contrib.layers.xavier_initializer())
 
-    #V1 = tf.tensordot(modif_a, G, 1)
-    #V2 = tf.tensordot(modif_b, G, 1)
+    V1 = tf.tensordot(modif_a, G, 1)
+    V2 = tf.tensordot(modif_b, G, 1)
 
-    V1 = tf.matmul(modif_a, G)
-    V2 = tf.matmul(modif_b, G)
+    #tf.layers.dense(output1, units)
+    V1 = tf.layers.dense(modif_a, hidden_g)
+    V2 = tf.layers.dense(modif_b, hidden_g)
 
     print "COMPARE", V1.shape, V2.shape
 
@@ -2139,6 +2138,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print "ADD", V1.shape, V2.shape
 
     v = tf.concat((v1, v2), axis=1)
+    print v.shape
     H = tf.get_variable("H", [2, num_classes], 
         initializer=tf.contrib.layers.xavier_initializer())
 
