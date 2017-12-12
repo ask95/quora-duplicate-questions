@@ -2133,8 +2133,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print "COMPARE", V1.shape, V2.shape
     print "trying", tf.squeeze(V1, ).shape
 
-    v1 = tf.reduce_sum(tf.squeeze(V1, axis=[0,1]), axis=1)
-    v2 = tf.reduce_sum(tf.squeeze(V2, axis=[0,1]), axis=1)
+    v1 = tf.reduce_sum(tf.squeeze(V1, axis=[2]), axis=1)
+    v2 = tf.reduce_sum(tf.squeeze(V2, axis=[2]), axis=1)
 
     print "ADD", V1.shape, V2.shape
 
