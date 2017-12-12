@@ -52,17 +52,11 @@ def pad(seq, length):
     result[0:seq.shape[0], :] = seq
     return result
 
-#def train_lstm_model(train_exs, word_vectors, ppdb_pairs, test_exs, lstm_size = 100, initial_learning_rate = 0.001, decay_steps = 1000, learning_rate_decay_factor = 0.95):
 def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor, variant, scaling_factor):
     n_classes = 2
     seq_max_len = 50
     batch_size = 256
     dim = len(word_vectors.get_embedding_byidx(0))
-
-    #lstm_size = 100
-    #initial_learning_rate = 0.001
-    #decay_steps = 1000
-    #learning_rate_decay_factor = 0.95
 
     #defining the computation graph
     q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
@@ -122,14 +116,6 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
     merged = tf.summary.merge_all()
 
     n_epochs = 10
-    #if variant == '1by1':
-    #    n_epochs *= 2
-
-    #start = timer()
-    #shuffle(train_exs)
-    #shuffle(ppdb_pairs)
-    #end = timer()
-    #print 'Time to shuffle:', (end-start)
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         tf.set_random_seed(0)
@@ -139,7 +125,6 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
             step_idx = 0
             print 'Epoch:', i,
             loss_this_iter = 0
-            #start = timer()
             if variant == 'alt':
                 shuffle(quora_pairs)
                 shuffle(ppdb_pairs)
@@ -163,9 +148,6 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
                 shuffle(train_exs)
             else:
                 print 'Invalid variant'
-            #train_exs = ppdb_pairs + quora_pairs
-            #end = timer()
-            #print 'Time to shuffle:', (end-start)
             for ex_idx in xrange(0, len(train_exs)/batch_size):
                 q1_ = []
                 q2_ = []
@@ -256,6 +238,7 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
             # evaluate
             test_correct = 0
             batch_size_pred = 100
+            incorrect = []
             for ex_idx in xrange(0, len(test_exs)/batch_size_pred):
                 q1_ = []
                 q2_ = []
@@ -278,7 +261,293 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
                     curr_idx = ex_idx * batch_size_pred + b
                     if (test_exs[curr_idx].label == pred_this_instance[b]):
                         test_correct += 1
+                    else:
+                        incorrect.append(test_exs[curr_idx].qp_idx)
             print 'Test accuracy',
             #print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after testing'
             print 100.0*test_correct / len(test_exs)
+        for inc in incorrect:
+            print inc
+
+def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor):
+    n_classes = 2
+    seq_max_len = 50
+    batch_size = 256
+    dim = len(word_vectors.get_embedding_byidx(0))
+
+    def myLSTMCell(reuse_):
+        lstm = tf.nn.rnn_cell.LSTMCell(lstm_size, reuse=reuse_)
+        return lstm
+
+    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    q2 = tf.placeholder(tf.float32, [None , seq_max_len, dim])
+    len1 = tf.placeholder(tf.int32, None)
+    len2 = tf.placeholder(tf.int32, None)
+    label = tf.placeholder(tf.int32, None)
+    w_q = tf.placeholder(tf.float32, None)
+
+    n_hidden = 100
+
+    label_onehot = tf.one_hot(label, n_classes)
+
+    #defining the computation graph
+    with tf.variable_scope("net_quora"):
+        outputs1, _ = tf.nn.dynamic_rnn(myLSTMCell(tf.get_variable_scope().reuse), \
+                      q1, sequence_length=len1, dtype=tf.float32)
+        outputs2, _ = tf.nn.dynamic_rnn(myLSTMCell(True), \
+                      q2, sequence_length=len2, dtype=tf.float32)
+
+        z1_q = tf.divide(tf.reduce_sum(outputs1, axis=1), \
+               tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), \
+               tf.constant([1, lstm_size])))
+        z2_q = tf.divide(tf.reduce_sum(outputs2, axis=1), \
+               tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), \
+               tf.constant([1, lstm_size])))
+
+        distance = tf.squared_difference(z1_q, z2_q)
+        angle = tf.multiply(z1_q, z2_q)
+
+        W_dist = tf.get_variable("W_dist", [lstm_size, n_hidden], \
+                 initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        W_angle = tf.get_variable("W_angle", [lstm_size, n_hidden], \
+                  initializer=tf.contrib.layers.xavier_initializer(seed=0))
+
+        z_concat_q = tf.concat([tf.tensordot(distance, W_dist, 1), \
+                   tf.tensordot(angle, W_angle, 1)], 1)
+
+        W = tf.get_variable("W", [2 * n_hidden, n_classes], \
+            initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        probs_q = tf.tensordot(tf.nn.sigmoid(z_concat_q), W, 1)
+
+        loss_q = tf.losses.softmax_cross_entropy(label_onehot, probs_q, weights = w_q)
+
+    with tf.variable_scope("net_ppdb"):
+        outputs1, _ = tf.nn.dynamic_rnn(myLSTMCell(tf.get_variable_scope().reuse), \
+                      q1, sequence_length=len1, dtype=tf.float32)
+        outputs2, _ = tf.nn.dynamic_rnn(myLSTMCell(True), \
+                      q2, sequence_length=len2, dtype=tf.float32)
+
+        z1_p = tf.divide(tf.reduce_sum(outputs1, axis=1), \
+               tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), \
+               tf.constant([1, lstm_size])))
+        z2_p = tf.divide(tf.reduce_sum(outputs2, axis=1), \
+               tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), \
+               tf.constant([1, lstm_size])))
+
+        distance = tf.squared_difference(z1_p, z2_p)
+        angle = tf.multiply(z1_p, z2_p)
+
+        W_dist = tf.get_variable("W_dist", [lstm_size, n_hidden], \
+                 initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        W_angle = tf.get_variable("W_angle", [lstm_size, n_hidden], \
+                  initializer=tf.contrib.layers.xavier_initializer(seed=0))
+
+        z_concat_p = tf.concat([tf.tensordot(distance, W_dist, 1), \
+                   tf.tensordot(angle, W_angle, 1)], 1)
+
+        W = tf.get_variable("W", [2 * n_hidden, n_classes], \
+            initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        probs_p = tf.tensordot(tf.nn.sigmoid(z_concat_p), W, 1)
+
+        loss_p = tf.losses.softmax_cross_entropy(label_onehot, probs_p, weights = 1-w_q)
+
+    loss_single = loss_q + loss_p
+
+    z1 = tf.concat([z1_q, z1_p], 1)
+    z2 = tf.concat([z2_q, z2_p], 1)
+
+    distance = tf.squared_difference(z1, z2)
+    angle = tf.multiply(z1, z2)
+   
+    W_dist = tf.get_variable("W_dist", [2 * lstm_size, n_hidden], \
+             initializer=tf.contrib.layers.xavier_initializer(seed=0))
+    W_angle = tf.get_variable("W_angle", [2 * lstm_size, n_hidden], \
+              initializer=tf.contrib.layers.xavier_initializer(seed=0))
+
+    z_combined = tf.concat([tf.tensordot(distance, W_dist, 1), \
+                            tf.tensordot(angle, W_angle, 1)], 1)
+
+    #z_combined = tf.concat([z_concat_q, z_concat_p], 1)
+    W_combined = tf.get_variable("W_comb", [2 * n_hidden, n_classes], \
+                 initializer=tf.contrib.layers.xavier_initializer(seed=0))
+
+    probs_combined = tf.tensordot(tf.nn.sigmoid(z_combined), W_combined, 1)
+    loss_combined = tf.losses.softmax_cross_entropy(label_onehot, probs_combined)
+    prediction = tf.argmax(probs_combined, axis=1)
+
+    # training algorithm parameters
+    global_step = tf.contrib.framework.get_or_create_global_step()
+    lr = tf.train.exponential_decay(initial_learning_rate,
+                                    global_step,
+                                    decay_steps,
+                                    learning_rate_decay_factor,
+                                    staircase=True)
+    tf.summary.scalar('learning_rate', lr)
+    tf.summary.scalar('loss', loss_single)
+    opt = tf.train.AdamOptimizer(lr)
+
+    var_list1 = filter(lambda v: 'net' in v.name, tf.trainable_variables())
+    var_list2 = tf.trainable_variables()
+    #var_list2 = filter(lambda v: 'net' not in v.name, tf.trainable_variables())
+    #print vars_list1
+    #print vars_list2
+
+    grads1 = opt.compute_gradients(loss_single, var_list = var_list1)
+    apply_gradients_op1 = opt.apply_gradients(grads1, global_step=global_step)
+    with tf.control_dependencies([apply_gradients_op1]):
+        train_op1 = tf.no_op(name='train')
+
+    grads2 = opt.compute_gradients(loss_combined, var_list = var_list2)
+    apply_gradients_op2 = opt.apply_gradients(grads2, global_step=global_step)
+    with tf.control_dependencies([apply_gradients_op2]):
+        train_op2 = tf.no_op(name='train')
+
+    init = tf.global_variables_initializer()
+    merged = tf.summary.merge_all()
+
+    #print [v.name for v in tf.trainable_variables()]
+
+    n_epochs = 20
+    with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
+        train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        tf.set_random_seed(0)
+        sess.run(init)
+
+        for i in range(0, n_epochs):
+            step_idx = 0
+            print 'Epoch:', i,
+            loss_this_iter = 0
+            train_exs = ppdb_pairs + quora_pairs
+            shuffle(train_exs)
+            for ex_idx in xrange(0, len(train_exs)/batch_size):
+                q1_ = []
+                q2_ = []
+                label_ = []
+                len1_ = []
+                len2_ = []
+                w_q_ = []
+                for b in xrange(0, batch_size):
+                    curr_idx = ex_idx * batch_size + b
+                    q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
+                    q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
+                    label_.append(train_exs[curr_idx].label)
+                    len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
+                    len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
+                    w_q_.append(1.0 if train_exs[curr_idx].dataset == 'quora' else 0.0)
+
+                if i < n_epochs/2:
+                    [_, loss_this_instance] = sess.run([train_op1, loss_single], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_, 
+                        label: np.array(label_), 
+                        len1: np.array(len1_),
+                        len2: np.array(len2_),
+                        w_q: np.array(w_q_)})
+                else:
+                    [_, loss_this_instance] = sess.run([train_op2, loss_single], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_, 
+                        label: np.array(label_), 
+                        len1: np.array(len1_),
+                        len2: np.array(len2_),
+                        w_q: np.array(w_q_)})
+                if step_idx % 100 == 0:
+                    lr = sess.run(opt._lr)
+                step_idx += 1
+                loss_this_iter += loss_this_instance
+            print 'Loss ' + repr(i) + ': ' + repr(loss_this_iter),
+
+            # evaluate
+            train_correct = 0
+            batch_size_pred = 100
+            for ex_idx in xrange(0, len(train_exs)/batch_size_pred):
+                q1_ = []
+                q2_ = []
+                len1_ = []
+                len2_ = []
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
+                    q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
+                    len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
+                    len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
+
+                [pred_this_instance] = sess.run([prediction], feed_dict = {
+                    q1: q1_, 
+                    q2: q2_,
+                    len1: np.array(len1_),
+                    len2: np.array(len2_)})
+                #print train_exs[ex_idx].label, pred_this_instance[0]
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    if (train_exs[curr_idx].label == pred_this_instance[b]):
+                        train_correct += 1
+            print 'Train accuracy', 
+            #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
+            print 100.0*train_correct / len(train_exs),
+
+            # evaluate
+            valid_correct = 0
+            batch_size_pred = 100
+            for ex_idx in xrange(0, len(valid_exs)/batch_size_pred):
+                q1_ = []
+                q2_ = []
+                len1_ = []
+                len2_ = []
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    q1_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q1), seq_max_len))
+                    q2_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q2), seq_max_len))
+                    len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
+                    len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
+
+                [pred_this_instance] = sess.run([prediction], feed_dict = {
+                    q1: q1_, 
+                    q2: q2_,
+                    len1: np.array(len1_),
+                    len2: np.array(len2_)})
+                #print valid_exs[ex_idx].label, pred_this_instance[0]
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    if (valid_exs[curr_idx].label == pred_this_instance[b]):
+                        valid_correct += 1
+            print 'Valid accuracy',
+            #print repr(valid_correct) + '/' + repr(len(valid_exs)) + ' correct after validing'
+            print 100.0*valid_correct / len(valid_exs),
+
+            # evaluate
+            test_correct = 0
+            batch_size_pred = 100
+            incorrect = []
+            for ex_idx in xrange(0, len(test_exs)/batch_size_pred):
+                q1_ = []
+                q2_ = []
+                len1_ = []
+                len2_ = []
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    q1_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q1), seq_max_len))
+                    q2_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q2), seq_max_len))
+                    len1_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
+                    len2_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
+
+                [pred_this_instance] = sess.run([prediction], feed_dict = {
+                    q1: q1_, 
+                    q2: q2_,
+                    len1: np.array(len1_),
+                    len2: np.array(len2_)})
+                #print test_exs[ex_idx].label, pred_this_instance[0]
+                for b in xrange(0, batch_size_pred):
+                    curr_idx = ex_idx * batch_size_pred + b
+                    if (test_exs[curr_idx].label == pred_this_instance[b]):
+                        test_correct += 1
+                    else:
+                        incorrect.append(test_exs[curr_idx].qp_idx)
+            print 'Test accuracy',
+            #print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after testing'
+            print 100.0*test_correct / len(test_exs)
+        '''
+        for inc in incorrect:
+            print inc
+        '''
 

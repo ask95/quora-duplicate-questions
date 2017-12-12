@@ -8,11 +8,12 @@ import random
 
 # Wraps a sequence of word indices with a 0-1 label (0 = negative, 1 = positive)
 class QuestionPair:
-    def __init__(self, indexed_q1, indexed_q2, label, dataset):
+    def __init__(self, indexed_q1, indexed_q2, label, dataset, qp_idx):
         self.indexed_q1 = indexed_q1
         self.indexed_q2 = indexed_q2
         self.label = label
         self.dataset = dataset
+        self.qp_idx = qp_idx
 
     def __repr__(self):
         return repr(self.indexed_q1) + "\t" + repr(self.indexed_q2) + "\t" + "; label=" + repr(self.label)
@@ -29,6 +30,7 @@ class QuestionPair:
 def read_and_index(infile, indexer, add_to_indexer=False, word_counter=None):
     exs = []
     maxi  = 0
+    qp_idx = 0
     with open(infile) as tsvfile:
         tsvreader = csv.reader(tsvfile, delimiter="\t")
         col_names = next(tsvreader)
@@ -57,8 +59,8 @@ def read_and_index(infile, indexer, add_to_indexer=False, word_counter=None):
             if len(indexed_q2) > maxi:
                 maxi = len(indexed_q2) 
             
-            exs.append(QuestionPair(indexed_q1, indexed_q2, label, 'quora'))
-    print maxi
+            exs.append(QuestionPair(indexed_q1, indexed_q2, label, 'quora', qp_idx))
+            qp_idx += 1
     return exs
 
 
@@ -86,7 +88,7 @@ def read_and_index_ppdb(infile, indexer, add_to_indexer=False, word_counter=None
                 indexed_s2 = [indexer.get_index(word) if indexer.contains(word) or add_to_indexer else indexer.get_index("UNK") for word in token_clean_s2]
                 
                 if len(indexed_s1) > 0 and len(indexed_s2) > 0:
-                    exs.append(QuestionPair(indexed_s1, indexed_s2, 1, 'ppdb'))
+                    exs.append(QuestionPair(indexed_s1, indexed_s2, 1, 'ppdb', -1))
             except:
                 pass
 
@@ -102,7 +104,7 @@ def read_and_index_ppdb(infile, indexer, add_to_indexer=False, word_counter=None
             r2 = np.random.random()
             indexed_s1 = exs[idx1].indexed_q1 if r1<0.5 else exs[idx1].indexed_q2
             indexed_s2 = exs[idx2].indexed_q1 if r2<0.5 else exs[idx2].indexed_q2
-        exs.append((QuestionPair(indexed_s1, indexed_s2, 0, 'ppdb')))
+        exs.append((QuestionPair(indexed_s1, indexed_s2, 0, 'ppdb', -1)))
 
     random.shuffle(exs)
     return exs
