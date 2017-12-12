@@ -2098,17 +2098,19 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     along_b = tf.expand_dims(along_b, 2)
     along_b = tf.tile(along_b, tf.constant([1, 1, num_cells]))
 
-    print "sum expanded correctly", along_a.shape, along_b.shape
+    #print "sum expanded correctly", along_a.shape, along_b.shape
     #n_along_a = tf.divide(along_a, tf.reduce_sum(along_a, axis=1))
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
     #unnorm_beta = tf.tensordot(exp_att, output2, 1)
     unnorm_beta = tf.matmul(exp_att, output2, 1)
-    print unnorm_beta.shape, along_a.shape
+    #print unnorm_beta.shape, along_a.shape
     beta = tf.div(unnorm_beta, along_a)
 
     unnorm_alpha = tf.tensordot(exp_att, output1, 1)
     alpha = tf.div(unnorm_alpha, along_b)
+
+    print "HEY there...", beta.shape, alpha.shape
 
     modif_a = tf.concat((output1, beta), axis=2)
     modif_b = tf.concat((output2, alpha), axis=2)
