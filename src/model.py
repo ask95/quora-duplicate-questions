@@ -269,6 +269,7 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             batch_test = 100
             if i == num_epochs - 1:
                 f = open(str(name)+"bench1.txt", "w+")
+		f1 = open("gold_labels.txt", "w+")
 
             for ex_idx in xrange(0, len(test_exs)/batch_test):
                 q1_ = []
@@ -308,7 +309,8 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                         test_correct += 1
 
                     if i == num_epochs - 1:
-                        f.write(pred_this_instance[b])
+                        f.write(str(pred_this_instance[b]))
+			f1.write(str(test_exs[curr_idx].label))
 
 
 
@@ -323,7 +325,8 @@ def train_bench1(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             print str2
 
             if i == num_epochs - 1:
-                f.write(pred_this_instance[b])
+                f.close()
+		f1.close()
 	#saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
 
@@ -1927,8 +1930,8 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             # Evaluate on the test set
     		test_correct = 0
     		batch_test = 100
-            if i == num_epochs -1:
-                f= open(str(name)+"bench7.txt","w+")
+            	if i == num_epochs -1:
+                	f= open(str(name)+"bench7.txt","w+")
 
     		for ex_idx in xrange(0, len(test_exs)/batch_test):
     		    q1_ = []
@@ -1967,7 +1970,7 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                         	test_correct += 1
 
                         if i == num_epochs -1:
-                            f.write(pred_this_instance[b])
+                            f.write(str(pred_this_instance[b]))
 
     			#print test_correct
     		# print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
@@ -1979,8 +1982,8 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     		print str1
     		print str2
 
-            if i == num_epochs -1:
-                f.close() 
+            	if i == num_epochs -1:
+                	f.close() 
 	#saver.save(sess, str(name)+'bench7_epoch', global_step=10)
 		#print str(str1)+ "\t" + str(str2)
 
