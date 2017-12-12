@@ -48,6 +48,8 @@ if __name__ == '__main__':
         test_exs_predicted = train_bench7(train_exs, test_exs, word_vectors, 0.01, 0.995)
     elif system_to_run == "BENCH8":
         test_exs_predicted = train_bench8(train_exs, test_exs, word_vectors, 0.001, 0.995)
+    elif system_to_run == "BENCH9":
+        test_exs_predicted = train_bench9(train_exs, test_exs, word_vectors, 0.001, 0.995)
     # elif system_to_run == "BENCH2":
     #     test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors)
     # elif system_to_run == "FANCY3":

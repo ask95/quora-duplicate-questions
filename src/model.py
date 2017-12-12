@@ -1987,4 +1987,275 @@ def train_bench8(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 	#saver.save(sess, str(name)+'bench7_epoch', global_step=10)
 		#print str(str1)+ "\t" + str(str2)
 
+def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
+    print "HEY"
+    # 59 is the max sentence length in the corpus, so let's set this to 60
+    seq_max_len = 60
+    # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
+
+    #TRAINING DATA
+    print "TRAIN Extraction begins!"
+    print len(train_exs)
+
+    dim = len(word_embeddings.get_embedding_byidx(0))
+
+    print "TEST Extraction ends!"
+
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
+    label = tf.placeholder(tf.int32, None)
+    q1_len = tf.placeholder(tf.int32, None)
+    q2_len = tf.placeholder(tf.int32, None)
+
+    embeddings = tf.Variable(word_embeddings.vectors)
+    print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
+
+
+
+    
+    #serial input (seq of 300 corresponding to each word)
+    
+    batch_size = 64
+    feat_vec_size = dim
+    #embedding_size = feat_vec_size
+
+    # We're using 2 classes. What's presented here is multi-class code that can scale to more classes, though
+    # slightly more compact code for the binary case is possible.
+    num_classes = 2
+
+    # DEFINING THE COMPUTATION GRAPH
+
+    # q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    # q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    # label = tf.placeholder(tf.int32, None)
+    # q1_len = tf.placeholder(tf.int32, None)
+    # q2_len = tf.placeholder(tf.int32, None)
+
+    num_cells = 100
+
+    def myLSTMcell(Preuse):
+        lstm = tf.nn.rnn_cell.LSTMCell(num_cells, reuse=Preuse) #tf.get_variable_scope().reuse)
+        return lstm
+
+    #myLSTMcell1 = myLSTMcell()
+    #myLSTMcell2 = myLSTMcell()
+
+    #initialS = myLSTMcell1.zero_state(1, tf.float32)
+    #sent_input = tf.unstack(sent)
+    #sent_input = sent
+    output1, _ = tf.nn.dynamic_rnn(myLSTMcell(tf.get_variable_scope().reuse), q1, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
+    #print "AKAMATH", output.shape, type(output)
+    #z = output[0][-1]
+
+    print output1.shape, output2.shape
+
+    #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
+    #z1 = tf.reduce_mean(output1, axis=1)
+    #z2 = tf.reduce_mean(output2, axis=1)
+
+    #print "hey bro", z1.shape, z2.shape
+
+    
+    #combining the LSTM representation of the 2 questions
+    #z = tf.concat([z1, z2], 1)
+
+    print "Z's shape is ", z.shape
+    #print "Hey!", output.shape
+    hidden_ff = 1
+    F = tf.get_variable("W", [num_cells, hidden_ff], 
+        initializer=tf.contrib.layers.xavier_initializer())#seed=0))
+
+    sent1_f = tf.tensordot(output1, F, 1)
+    sent2_f = tf.tensordot(output2, F, 1)
+
+    att = tf.tensordot(sent1_f, sent2_f.T, 1)
+    exp_att = tf.exp(att)
+
+    along_a = tf.reduce_sum(exp_att, axis=0)
+    along_b = tf.reduce_sum(exp_att, axis=1)
+
+    #n_along_a = tf.divide(along_a, tf.reduce_sum(along_a, axis=1))
+    #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
+
+    unnorm_beta = tf.tensordot(exp_att, output2, 1)
+    beta = tf.div(unnorm_beta, along_a)
+
+    unnorm_alpha = tf.tensordot(exp_att, output1, 1)
+    alpha = tf.div(unnorm_alpha, along_b)
+
+    modif_a = tf.concat(output1, beta, axis=1)
+    modif_b = tf.concat(output2, aplha, axis=1)
+
+    hidden_g = 1
+    G = tf.get_variable("W", [num_cells*2, hidden_g], 
+        initializer=tf.contrib.layers.xavier_initializer())
+
+    V1 = tf.tensordot(modif_a, G, 1)
+    V2 = tf.tensordot(modif_b, G, 1)
+
+    v1 = tf.reduce_sum(V1, axis=0)
+    v2 = tf.reduce_sum(V2, axis=0)
+
+    v = tf.concat(v1, v2, axis=0)
+    H = tf.get_variable("W", [2, num_classes], 
+        initializer=tf.contrib.layers.xavier_initializer())
+
+    probs = tf.nn.softmax(tf.tensordot(v, H, 1))
+
+    one_best = tf.argmax(probs, axis=1)
+    print "hey sexy", tf.shape(probs)
+    label_onehot = tf.one_hot(label, num_classes)
+    #print tf.shape(probs)[0], tf.shape(label_onehot)[0]
+    
+
+    loss = tf.losses.softmax_cross_entropy(label_onehot, probs)
+
+
+
+    decay_steps = 100
+    #learning_rate_decay_factor = 0.995
+    global_step = tf.contrib.framework.get_or_create_global_step()
+    # Smaller learning rates are sometimes necessary for larger networks
+    #initial_learning_rate = 0.01
+    # Decay the learning rate exponentially based on the number of steps.
+    lr = tf.train.exponential_decay(initial_learning_rate,
+                                    global_step,
+                                    decay_steps,
+                                    learning_rate_decay_factor,
+                                    staircase=True)
+    # Logging with Tensorboard
+    tf.summary.scalar('learning_rate', lr)
+    tf.summary.scalar('loss', loss)
+    # Plug in any first-order method here! We'll use Adam, which works pretty well, but SGD with momentum, Adadelta,
+    # and lots of other methods work well too
+    #opt = tf.train.AdamOptimizer(lr)
+    opt = tf.train.AdamOptimizer()
+    # Loss is the thing that we're optimizing
+    grads = opt.compute_gradients(loss)
+    # Now that we have gradients, we operationalize them by defining an operator that actually applies them.
+    apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+    with tf.control_dependencies([apply_gradient_op]):
+        train_op = tf.no_op(name='train')
+
+    # RUN TRAINING AND TEST
+    # Initializer; we need to run this first to initialize variables
+    init = tf.global_variables_initializer()
+    num_epochs = 10
+    name = random.randint(0, 4242)
+    merged = tf.summary.merge_all()  # merge all the tensorboard variables
+    # The computation graph must be run in a particular Tensorflow "session". Parameters, etc. are localized to the
+    # session (unless you pass them around outside it). All runs of a computation graph with certain values are relative
+    # to a particular session
+    with tf.Session() as sess:
+        # Write a logfile to the logs/ directory, can use Tensorboard to view this
+        #train_writer = tf.summary.FileWriter('../logs/', sess.graph)
+        # Generally want to determinize training as much as possible
+        tf.set_random_seed(0)
+    #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+        # Initialize variables
+        sess.run(init)
+        step_idx = 0
+        #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+        for i in range(0, num_epochs):
+            step_idx = 0
+        #saver = tf.train.Saver(write_version=tf.train.SaverDef.V1)
+            print "Epoch:", i
+            loss_this_iter = 0
+            # batch_size of 1 here; if we want bigger batches, we need to build our network appropriately
+            for ex_idx in xrange(0, len(train_exs)/batch_size):
+                if step_idx % 100 == 0:
+                    print 'step:', step_idx
+                q1_ = []
+                q2_ = []
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
+
+                for b in xrange(0, batch_size):
+                    #print b
+                    curr_idx = ex_idx * batch_size + b
+                    q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+                    q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
+                    label_.append(train_exs[curr_idx].label)
+                    q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
+                
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                                                                                    _q2: q2_,
+                                                                                   label: np.array(label_),
+                                                                                   q2_len: np.array(q2_sq_len_), 
+                                                                                   q1_len: np.array(q1_sq_len_)})
+
+                step_idx += 1
+                loss_this_iter += loss_this_instance
+            print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
+        
+        # Evaluate on the test set
+            test_correct = 0
+            batch_test = 100
+            if i == num_epochs - 1:
+                f = open(str(name)+"bench1.txt", "w+")
+        f1 = open("gold_labels.txt", "w+")
+
+            for ex_idx in xrange(0, len(test_exs)/batch_test):
+                q1_ = []
+                q2_ = []
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
+
+                for b in xrange(0, batch_test):
+                #print b
+                    curr_idx = ex_idx * batch_test + b
+                    q1_.append(pad(test_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(test_exs[curr_idx].indexed_q2, seq_max_len))
+                    label_.append(test_exs[curr_idx].label)
+                    q1_sq_len_.append(len(test_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(test_exs[curr_idx].indexed_q2))
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, prediction, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                  feed_dict={_q1: q1_, #[testq1_s_input[ex_idx]],
+                                                _q2: q2_,
+                                                   label: np.array(label_),
+                                                                                               q2_len: np.array(q2_sq_len_), 
+                                                                                               q1_len: np.array(q1_sq_len_)}) 
+                #print len(test_exs)
+                for b in xrange(0, len(pred_this_instance)):
+                    curr_idx = ex_idx * batch_test + b
+                #print curr_idx
+                    if (test_exs[curr_idx].label == pred_this_instance[b]):
+                        test_correct += 1
+
+                    if i == num_epochs - 1:
+                        f.write(str(pred_this_instance[b]))
+            f1.write(str(test_exs[curr_idx].label))
+
+
+
+                #print test_correct
+            # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
+            #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
+            # print "  Hidden layer activations for this example: " + repr(z_this_instance)
+            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+            str2 =  1.0*test_correct/len(test_exs)
+            #saver.save(sess, str(name)+'bench1_epoch', global_step=i)
+            print str1
+            print str2
+
+            if i == num_epochs - 1:
+                f.close()
+        f1.close()
+    #saver.save(sess, str(name)+'bench1_epoch', global_step=10)
+
 
