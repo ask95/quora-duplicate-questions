@@ -2271,6 +2271,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 #print curr_idx
                     if (test_exs[curr_idx].label == pred_this_instance[b]):
                         test_correct += 1
+                        print probs_this_instance[b], pred_this_instance[b]
 
                     if i == num_epochs - 1:
                         f.write(str(pred_this_instance[b]))
