@@ -2126,14 +2126,19 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     V1 = tf.tensordot(modif_a, G, 1)
     V2 = tf.tensordot(modif_b, G, 1)
 
+    print "COMPARE", V1.shape, V2.shape
+
     v1 = tf.reduce_sum(V1, axis=1)
     v2 = tf.reduce_sum(V2, axis=1)
+
+    print "ADD", V1.shape, V2.shape
 
     v = tf.concat((v1, v2), axis=1)
     H = tf.get_variable("H", [2, num_classes], 
         initializer=tf.contrib.layers.xavier_initializer())
 
     probs = tf.nn.softmax(tf.tensordot(v, H, 1))
+    print probs.shape
 
     one_best = tf.argmax(probs, axis=1)
     print "hey sexy", tf.shape(probs)
