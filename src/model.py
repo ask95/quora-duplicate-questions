@@ -2110,10 +2110,12 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     unnorm_alpha = tf.tensordot(exp_att, output1, 1)
     alpha = tf.div(unnorm_alpha, along_b)
 
-    print "HEY there...", beta.shape, alpha.shape
+    #print "HEY there...", beta.shape, alpha.shape
 
     modif_a = tf.concat((output1, beta), axis=2)
     modif_b = tf.concat((output2, alpha), axis=2)
+
+    print modif_a.shape, modif_b.shape
 
     hidden_g = 1
     G = tf.get_variable("G", [num_cells*2, hidden_g], 
