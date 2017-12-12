@@ -2070,8 +2070,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
     units = 100
-    sent1_f = tf.matmul(output1, F)
-    sent2_f = tf.matmul(output2, F)
+    sent1_f = tf.tensordot(output1, F, 1)
+    sent2_f = tf.tensordot(output2, F, 1)
 
     print sent1_f.shape, sent2_f.shape
 
@@ -2131,8 +2131,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #V1 = tf.layers.dense(modif_a, hidden_g)
     #V2 = tf.layers.dense(modif_b, hidden_g)
 
-    V1 = tf.matmul(modif_a, G)
-    V2 = tf.matmul(modif_b, G)
+    V1 = tf.tensordot(modif_a, G, 1)
+    V2 = tf.tensordot(modif_b, G, 1)
 
     print "COMPARE", V1.shape, V2.shape
     print "trying", tf.squeeze(V1 ).shape
