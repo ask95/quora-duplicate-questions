@@ -2109,7 +2109,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print unnorm_beta.shape, along_a.shape
     beta = tf.div(unnorm_beta, along_a)
 
-    unnorm_alpha = tf.tensordot(exp_att, output1, 1)
+    unnorm_alpha = tf.matmul(exp_att, output1, 1)
     alpha = tf.div(unnorm_alpha, along_b)
 
     #print "HEY there...", beta.shape, alpha.shape
