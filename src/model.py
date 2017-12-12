@@ -2066,7 +2066,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     hidden_ff = 10
-    F = tf.get_variable("F", [hidden_f, num_cells], 
+    F = tf.get_variable("F", [hidden_ff, num_cells], 
         initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
     units = 100
