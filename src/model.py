@@ -2091,6 +2091,14 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     along_b = tf.reduce_sum(exp_att, axis=2)
 
     print "sum found correctly", along_a.shape, along_b.shape
+
+    along_a = tf.expand_dims(along_a, 2)
+    along_a = tf.tile(along_a, tf.constant([batch_size, seq_max_len, num_cells], dtype=int32))
+
+    along_b = tf.expand_dims(along_b, 2)
+    along_b = tf.tile(along_b, tf.constant([batch_size, seq_max_len, num_cells], dtype=int32))
+
+    print "sum expanded correctly", along_a.shape, along_b.shape
     #n_along_a = tf.divide(along_a, tf.reduce_sum(along_a, axis=1))
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
@@ -2102,8 +2110,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     unnorm_alpha = tf.tensordot(exp_att, output1, 1)
     alpha = tf.div(unnorm_alpha, along_b)
 
-    modif_a = tf.concat((output1, beta), axis=1)
-    modif_b = tf.concat((output2, alpha), axis=1)
+    modif_a = tf.concat((output1, beta), axis=2)
+    modif_b = tf.concat((output2, alpha), axis=2)
 
     hidden_g = 1
     G = tf.get_variable("G", [num_cells*2, hidden_g], 
@@ -2112,10 +2120,10 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     V1 = tf.tensordot(modif_a, G, 1)
     V2 = tf.tensordot(modif_b, G, 1)
 
-    v1 = tf.reduce_sum(V1, axis=0)
-    v2 = tf.reduce_sum(V2, axis=0)
+    v1 = tf.reduce_sum(V1, axis=1)
+    v2 = tf.reduce_sum(V2, axis=1)
 
-    v = tf.concat((v1, v2), axis=0)
+    v = tf.concat((v1, v2), axis=1)
     H = tf.get_variable("H", [2, num_classes], 
         initializer=tf.contrib.layers.xavier_initializer())
 
