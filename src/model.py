@@ -2090,6 +2090,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     along_a = tf.reduce_sum(exp_att, axis=1)
     along_b = tf.reduce_sum(exp_att, axis=2)
 
+
+
     print "sum found correctly", along_a.shape, along_b.shape
 
     along_a = tf.expand_dims(along_a, 2)
@@ -2098,7 +2100,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     along_b = tf.expand_dims(along_b, 2)
     along_b = tf.tile(along_b, tf.constant([1, 1, num_cells]))
 
-    #print "sum expanded correctly", along_a.shape, along_b.shape
+    print "sum expanded correctly", along_a.shape, along_b.shape
     #n_along_a = tf.divide(along_a, tf.reduce_sum(along_a, axis=1))
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
