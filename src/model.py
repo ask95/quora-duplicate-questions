@@ -2075,14 +2075,14 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print sent1_f.shape, sent2_f.shape
 
     
-    print tf.transpose(sent2_f, (0, 2, 1))
+    #print tf.transpose(sent2_f, (0, 2, 1))
     # sent2_f = tf.tensordot(output2, F, 1)
     # sent1_f = tf.tensordot(output1, F, 1)
     # print sent1_f
    # sent2_f = tf.tensordot(output2, F, 1)
 
     #att = tf.tensordot(sent1_f, tf.transpose(sent2_f), 1)
-    att = tf.matmul(sent1_f, tf.transpose(sent2_f, (0, 2, 1)), 1)
+    att = tf.matmul(sent1_f, sent2_f, 1)
     #att = tf.transpose(att)
     exp_att = tf.exp(att)
     print exp_att.get_shape() 
