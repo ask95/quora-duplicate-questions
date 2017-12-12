@@ -2083,13 +2083,14 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     #att = tf.tensordot(sent1_f, tf.transpose(sent2_f), 1)
     att = tf.matmul(tf.transpose(sent1_f, (0, 2, 1)), tf.transpose(sent2_f, (0, 2, 1)), 1)
-    print att.shape
+    #print att.shape
     #att = tf.transpose(att)
     exp_att = tf.exp(att)
-    print exp_att.get_shape() 
+    #print exp_att.get_shape() 
     along_a = tf.reduce_sum(exp_att, axis=0)
     along_b = tf.reduce_sum(exp_att, axis=1)
 
+    print along_a.shape, along_b.shape
     #n_along_a = tf.divide(along_a, tf.reduce_sum(along_a, axis=1))
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
