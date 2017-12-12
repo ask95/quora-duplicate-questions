@@ -2083,6 +2083,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     #att = tf.tensordot(sent1_f, tf.transpose(sent2_f), 1)
     att = tf.matmul(sent1_f, sent2_f, 1)
+    print att.shape
     #att = tf.transpose(att)
     exp_att = tf.exp(att)
     print exp_att.get_shape() 
