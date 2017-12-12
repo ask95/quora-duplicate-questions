@@ -2033,8 +2033,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     # q1_len = tf.placeholder(tf.int32, None)
     # q2_len = tf.placeholder(tf.int32, None)
 
-    num_cells = 100
-
+    #num_cells = 100
+    num_cells = 300
     def myLSTMcell(Preuse):
         lstm = tf.nn.rnn_cell.LSTMCell(num_cells, reuse=Preuse) #tf.get_variable_scope().reuse)
         return lstm
@@ -2049,7 +2049,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     output2, _ = tf.nn.dynamic_rnn(myLSTMcell(True), q2, dtype=tf.float32) #sequence_length=sent_len, dtype=tf.float32)
     #print "AKAMATH", output.shape, type(output)
     #z = output[0][-1]
-
+    output1 = q1
+    output2 = q2
     print output1.shape, output2.shape
 
     #on the basis of conclusions from last assignment, we use the mean vector instead of the last vector
@@ -2064,11 +2065,11 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
-    hidden_ff = 1
+    hidden_ff = 10
     #F = tf.get_variable("F", [num_cells, hidden_ff], 
         #initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
-    units = 1
+    units = 100
     sent1_f = tf.layers.dense(output1, units)
     sent2_f = tf.layers.dense(output2, units)
 
@@ -2119,7 +2120,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     print modif_a.shape, modif_b.shape
 
-    hidden_g = 1
+    hidden_g = 100
     G = tf.get_variable("G", [num_cells*2, hidden_g], 
         initializer=tf.contrib.layers.xavier_initializer())
 
@@ -2140,7 +2141,7 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     v = tf.concat((v1, v2), axis=1)
     print v.shape
-    H = tf.get_variable("H", [2, num_classes], 
+    H = tf.get_variable("H", [2*hidden_g, num_classes], 
         initializer=tf.contrib.layers.xavier_initializer())
 
     probs = tf.nn.softmax(tf.tensordot(v, H, 1))
@@ -2224,13 +2225,14 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
                 
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                [_, loss_this_instance, attention, summary, alpha1, beta1, v1] = sess.run([train_op, loss, exp_att, merged, alpha, beta, v], feed_dict = {_q1: q1_,
                                                                                     _q2: q2_,
                                                                                    label: np.array(label_),
                                                                                    q2_len: np.array(q2_sq_len_), 
                                                                                    q1_len: np.array(q1_sq_len_)})
 
-                step_idx += 1
+                print v1 #alpha1, beta1
+		step_idx += 1
                 loss_this_iter += loss_this_instance
             print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
         
