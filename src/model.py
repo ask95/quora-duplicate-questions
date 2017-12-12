@@ -2123,8 +2123,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     G = tf.get_variable("G", [num_cells*2, hidden_g], 
         initializer=tf.contrib.layers.xavier_initializer())
 
-    V1 = tf.tensordot(modif_a, G, 1)
-    V2 = tf.tensordot(modif_b, G, 1)
+    #V1 = tf.tensordot(modif_a, G, 1)
+    #V2 = tf.tensordot(modif_b, G, 1)
 
     #tf.layers.dense(output1, units)
     V1 = tf.layers.dense(modif_a, hidden_g)
@@ -2132,8 +2132,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     print "COMPARE", V1.shape, V2.shape
 
-    v1 = tf.reduce_sum(V1, axis=1)
-    v2 = tf.reduce_sum(V2, axis=1)
+    v1 = tf.reduce_sum(tf.squeeze(V1), axis=1)
+    v2 = tf.reduce_sum(tf.squeeze(V2), axis=1)
 
     print "ADD", V1.shape, V2.shape
 
