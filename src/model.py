@@ -2065,12 +2065,16 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     hidden_ff = 1
-    F = tf.get_variable("F", [num_cells, hidden_ff], 
-        initializer=tf.contrib.layers.xavier_initializer())#seed=0))
+    #F = tf.get_variable("F", [num_cells, hidden_ff], 
+        #initializer=tf.contrib.layers.xavier_initializer())#seed=0))
+
+    units = 1
+    sent1_f = tf.layers.dense(output1, units)
+    sent2_f = tf.layers.dense(output2, units)
     
-    sent2_f = tf.tensordot(output2, F, 1)
-    sent1_f = tf.tensordot(output1, F, 1)
-    print sent1_f
+    # sent2_f = tf.tensordot(output2, F, 1)
+    # sent1_f = tf.tensordot(output1, F, 1)
+    # print sent1_f
    # sent2_f = tf.tensordot(output2, F, 1)
 
     att = tf.tensordot(sent1_f, tf.transpose(sent2_f), 1)
