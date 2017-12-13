@@ -34,8 +34,8 @@ def read_and_index(infile, indexer, add_to_indexer=False, word_counter=None):
         for line in tsvreader:
             fields = line
             label = int(fields[-1])
-            q1 = fields[-3]
-            q2 = fields[-2]
+            q1 = fields[-3].lower()
+            q2 = fields[-2].lower()
 
             token_clean_q1 = filter(lambda x: x != '', clean_str(q1).rstrip().split(" "))
             token_clean_q2 = filter(lambda x: x != '', clean_str(q2).rstrip().split(" "))

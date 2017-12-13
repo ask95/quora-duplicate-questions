@@ -16,7 +16,7 @@ if __name__ == '__main__':
     word_vectors = read_word_embeddings("/u/akamath/Documents/quora-duplicate-questions/data/glove.6B.300d-relativized.txt")
 
     # Load train, dev, and test exs
-    exs = read_and_index(data_path + "1mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
+    exs = read_and_index(data_path + "mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
     train_exs, test_exs = train_test_split(exs, test_size=0.3, random_state = 42)
     #df = pd.read_csv('C:/Dataset.csv')
     #df['split'] = np.random.randn(df.shape[0], 1)
