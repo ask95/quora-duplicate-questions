@@ -2066,12 +2066,12 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     hidden_ff = 10
-    #F = tf.get_variable("F", [num_cells, hidden_ff], 
-        #initializer=tf.contrib.layers.xavier_initializer())#seed=0))
+    F = tf.get_variable("F", [hidden_ff, num_cells], 
+        initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
     units = 100
-    sent1_f = tf.layers.dense(output1, units)
-    sent2_f = tf.layers.dense(output2, units)
+    sent1_f = tf.tensordot(output1, F, 1)
+    sent2_f = tf.tensordot(output2, F, 1)
 
     print sent1_f.shape, sent2_f.shape
 
@@ -2121,15 +2121,18 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     print modif_a.shape, modif_b.shape
 
     hidden_g = 100
-    G = tf.get_variable("G", [num_cells*2, hidden_g], 
+    G = tf.get_variable("G", [hidden_g, num_cells*2], 
         initializer=tf.contrib.layers.xavier_initializer())
 
     #V1 = tf.tensordot(modif_a, G, 1)
     #V2 = tf.tensordot(modif_b, G, 1)
 
     #tf.layers.dense(output1, units)
-    V1 = tf.layers.dense(modif_a, hidden_g)
-    V2 = tf.layers.dense(modif_b, hidden_g)
+    #V1 = tf.layers.dense(modif_a, hidden_g)
+    #V2 = tf.layers.dense(modif_b, hidden_g)
+
+    V1 = tf.tensordot(modif_a, G, 1)
+    V2 = tf.tensordot(modif_b, G, 1)
 
     print "COMPARE", V1.shape, V2.shape
     print "trying", tf.squeeze(V1 ).shape
@@ -2301,5 +2304,42 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 f.close()
         	f1.close()
     #saver.save(sess, str(name)+'bench1_epoch', global_step=10)
+
+def train_svm(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
+    print "HEY"
+    # 59 is the max sentence length in the corpus, so let's set this to 60
+    seq_max_len = 60
+    # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
+
+    #TRAINING DATA
+    #print "TRAIN Extraction begins!"
+    print len(train_exs), "Training set"
+    train_X = []
+    train_Y = []
+
+    for qp in train_exs:
+        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
+        train_X.append([avg_q1, avg_q2])
+        train_Y.append(qp.label)
+
+    print len(test_exs), "Test set"
+    test_X = []
+    test_Y = []
+
+    for qp in train_exs:
+        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
+        test_X.append([avg_q1, avg_q2])
+        test_Y.append(qp.label)
+
+    from sklearn import svm
+    from sklearn.metrics import accuracy_score
+    clf = svm.SVC()
+    clf.fit(train_X, train_Y)
+
+    y_pred = clf.predict(test_X)
+    print accuracy_score(test_Y, y_pred)
+
 
 
