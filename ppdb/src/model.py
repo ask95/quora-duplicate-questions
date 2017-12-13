@@ -351,6 +351,9 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
 
         loss_p = tf.losses.softmax_cross_entropy(label_onehot, probs_p, weights = 1-w_q)
 
+    pred_q = tf.argmax(probs_q, axis=1)
+    pred_p = tf.argmax(probs_p, axis=1)
+    
     loss_single = loss_q + loss_p
 
     z1 = tf.concat([z1_q, z1_p], 1)
@@ -407,7 +410,7 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
 
     #print [v.name for v in tf.trainable_variables()]
 
-    n_epochs = 20
+    n_epochs = 50
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         tf.set_random_seed(0)
@@ -417,7 +420,10 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
             step_idx = 0
             print 'Epoch:', i,
             loss_this_iter = 0
-            train_exs = ppdb_pairs + quora_pairs
+            if i % 2 == 0:
+                train_exs = ppdb_pairs + quora_pairs
+            else:
+                train_exs = quora_pairs
             shuffle(train_exs)
             for ex_idx in xrange(0, len(train_exs)/batch_size):
                 q1_ = []
@@ -435,7 +441,7 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                     len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
                     w_q_.append(1.0 if train_exs[curr_idx].dataset == 'quora' else 0.0)
 
-                if i < n_epochs/2:
+                if i % 2 == 0:
                     [_, loss_this_instance] = sess.run([train_op1, loss_single], feed_dict = {
                         q1: q1_, 
                         q2: q2_, 
@@ -472,18 +478,24 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                     len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
                     len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
 
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print train_exs[ex_idx].label, pred_this_instance[0]
+                if i % 2 == -1:
+                #if i < n_epochs/2:
+                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
+                else:
+                    [pred_this_instance] = sess.run([prediction], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
                 for b in xrange(0, batch_size_pred):
                     curr_idx = ex_idx * batch_size_pred + b
                     if (train_exs[curr_idx].label == pred_this_instance[b]):
                         train_correct += 1
             print 'Train accuracy', 
-            #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
             print 100.0*train_correct / len(train_exs),
 
             # evaluate
@@ -501,18 +513,24 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                     len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
                     len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
 
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print valid_exs[ex_idx].label, pred_this_instance[0]
+                if i % 2 == -1:
+                #if i < n_epochs/2:
+                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
+                else:
+                    [pred_this_instance] = sess.run([prediction], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
                 for b in xrange(0, batch_size_pred):
                     curr_idx = ex_idx * batch_size_pred + b
                     if (valid_exs[curr_idx].label == pred_this_instance[b]):
                         valid_correct += 1
             print 'Valid accuracy',
-            #print repr(valid_correct) + '/' + repr(len(valid_exs)) + ' correct after validing'
             print 100.0*valid_correct / len(valid_exs),
 
             # evaluate
@@ -531,12 +549,19 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                     len1_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
                     len2_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
 
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print test_exs[ex_idx].label, pred_this_instance[0]
+                if i % 2 == -1:
+                #if i < n_epochs/2:
+                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
+                else:
+                    [pred_this_instance] = sess.run([prediction], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
                 for b in xrange(0, batch_size_pred):
                     curr_idx = ex_idx * batch_size_pred + b
                     if (test_exs[curr_idx].label == pred_this_instance[b]):
@@ -544,7 +569,6 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                     else:
                         incorrect.append(test_exs[curr_idx].qp_idx)
             print 'Test accuracy',
-            #print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after testing'
             print 100.0*test_correct / len(test_exs)
         '''
         for inc in incorrect:
