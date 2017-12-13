@@ -2305,4 +2305,41 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         	f1.close()
     #saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
+def train_svm(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
+    print "HEY"
+    # 59 is the max sentence length in the corpus, so let's set this to 60
+    seq_max_len = 60
+    # To get you started off, we'll pad the training input to 237 words to make it a square matrix.
+
+    #TRAINING DATA
+    #print "TRAIN Extraction begins!"
+    print len(train_exs), "Training set"
+    train_X = []
+    train_Y = []
+
+    for qp in train_exs:
+        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
+        train_X.append([avg_q1, avg_q2])
+        train_Y.append(qp.label)
+
+    print len(test_exs), "Test set"
+    test_X = []
+    test_Y = []
+
+    for qp in train_exs:
+        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
+        test_X.append([avg_q1, avg_q2])
+        test_Y.append(qp.label)
+
+    from sklearn import svm
+    from sklearn.metrics import accuracy_score
+    clf = svm.SVC()
+    clf.fit(train_X, train_Y)
+
+    y_pred = clf.predict(test_X)
+    print accuracy_score(test_Y, y_pred)
+
+
 
