@@ -239,184 +239,127 @@ def train_bench1(train_exs, valid_exs, test_exs, word_embeddings, initial_learni
             loss_this_iter = 0
 
             train_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(train_exs)/batch_size_pred):
+            # batch_size of 1 here; if we want bigger batches, we need to build our network appropriately
+            for ex_idx in xrange(0, len(train_exs)/batch_size):
+                if step_idx % 100 == 0:
+                    print 'step:', step_idx
                 q1_ = []
                 q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
 
-                [pred_this_instance] = sess.run([one_best], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print train_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (train_exs[curr_idx].label == pred_this_instance[b]):
-                        print "Yo"
-                        train_correct += 1
-            print 'Train accuracy', 
-            #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
-            print 100.0*train_correct / len(train_exs),
+                for b in xrange(0, batch_size):
+                    #print b
+                    curr_idx = ex_idx * batch_size + b
+                    q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+                    q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
+                    label_.append(train_exs[curr_idx].label)
+                    q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
+                
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                                                                                    _q2: q2_,
+                                                                                   label: np.array(label_),
+                                                                                   q2_len: np.array(q2_sq_len_), 
+                                                                                   q1_len: np.array(q1_sq_len_)})
 
-            # evaluate
+                step_idx += 1
+                loss_this_iter += loss_this_instance
+            print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
+
             valid_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(valid_exs)/batch_size_pred):
+            batch_valid = 100
+
+            for ex_idx in xrange(0, len(valid_exs)/batch_valid):
                 q1_ = []
                 q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, valid_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, valid_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
 
-                [pred_this_instance] = sess.run([one_best], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print valid_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
+                for b in xrange(0, batch_valid):
+                #print b
+                    curr_idx = ex_idx * batch_valid + b
+                    q1_.append(pad(valid_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(valid_exs[curr_idx].indexed_q2, seq_max_len))
+                    q1_sq_len_.append(len(valid_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(valid_exs[curr_idx].indexed_q2))
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, one_best, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                  feed_dict={_q1: q1_, #[testq1_s_input[ex_idx]],
+                                                _q2: q2_,
+                                               q2_len: np.array(q2_sq_len_), 
+                                               q1_len: np.array(q1_sq_len_)}) 
+                #print len(test_exs)
+                for b in xrange(0, len(pred_this_instance)):
+                    curr_idx = ex_idx * batch_valid + b
+                #print curr_idx
                     if (valid_exs[curr_idx].label == pred_this_instance[b]):
                         valid_correct += 1
-            print 'Valid accuracy',
-            #print repr(valid_correct) + '/' + repr(len(valid_exs)) + ' correct after validing'
-            print 100.0*valid_correct / len(valid_exs),
-
-            # evaluate
+        
+        # Evaluate on the test set
             test_correct = 0
-            batch_size_pred = 100
-            incorrect = []
-            for ex_idx in xrange(0, len(test_exs)/batch_size_pred):
+            batch_test = 100
+
+            for ex_idx in xrange(0, len(test_exs)/batch_test):
                 q1_ = []
                 q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, test_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, test_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
 
-                [pred_this_instance] = sess.run([one_best], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print test_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
+                for b in xrange(0, batch_test):
+                #print b
+                    curr_idx = ex_idx * batch_test + b
+                    q1_.append(pad(test_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(test_exs[curr_idx].indexed_q2, seq_max_len))
+                    label_.append(test_exs[curr_idx].label)
+                    q1_sq_len_.append(len(test_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(test_exs[curr_idx].indexed_q2))
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, one_best, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                  feed_dict={_q1: q1_, #[testq1_s_input[ex_idx]],
+                                                _q2: q2_,
+                                               q2_len: np.array(q2_sq_len_), 
+                                               q1_len: np.array(q1_sq_len_)}) 
+                #print len(test_exs)
+                for b in xrange(0, len(pred_this_instance)):
+                    curr_idx = ex_idx * batch_test + b
+                #print curr_idx
                     if (test_exs[curr_idx].label == pred_this_instance[b]):
                         test_correct += 1
-            print 'Test accuracy',
-            #print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after testing'
-            print 100.0*test_correct / len(test_exs)
-            # batch_size of 1 here; if we want bigger batches, we need to build our network appropriately
-  #           for ex_idx in xrange(0, len(train_exs)/batch_size):
-  #               if step_idx % 100 == 0:
-  #                   print 'step:', step_idx
-  #               q1_ = []
-  #               q2_ = []
-  #               label_ = []
-  #               q1_sq_len_ = []
-  #               q2_sq_len_ = []
-
-  #               for b in xrange(0, batch_size):
-  #                   #print b
-  #                   curr_idx = ex_idx * batch_size + b
-  #                   q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
-  #                   q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
-  #                   label_.append(train_exs[curr_idx].label)
-  #                   q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
-  #                   q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
-                
-  #               [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
-  #                                                                                   _q2: q2_,
-  #                                                                                  label: np.array(label_),
-  #                                                                                  q2_len: np.array(q2_sq_len_), 
-  #                                                                                  q1_len: np.array(q1_sq_len_)})
-
-  #               step_idx += 1
-  #               loss_this_iter += loss_this_instance
-  #           print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
-        
-  #       # Evaluate on the test set
-  #           test_correct = 0
-  #           batch_test = 100
-  #           if i == num_epochs - 1:
-  #               f = open(str(name)+"bench1.txt", "w+")
-		# f1 = open("gold_labels.txt", "w+")
-
-  #           for ex_idx in xrange(0, len(test_exs)/batch_test):
-  #               q1_ = []
-  #               q2_ = []
-  #               label_ = []
-  #               q1_sq_len_ = []
-  #               q2_sq_len_ = []
-
-  #               for b in xrange(0, batch_test):
-  #               #print b
-  #                   curr_idx = ex_idx * batch_test + b
-  #                   q1_.append(pad(test_exs[curr_idx].indexed_q1, seq_max_len))
-  #           #print q1_[0]
-  #                   q2_.append(pad(test_exs[curr_idx].indexed_q2, seq_max_len))
-  #                   label_.append(test_exs[curr_idx].label)
-  #                   q1_sq_len_.append(len(test_exs[curr_idx].indexed_q1))
-  #                   q2_sq_len_.append(len(test_exs[curr_idx].indexed_q2))
-  #           # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
-  #           # quantities from the running of the computation graph, namely the probabilities, one_best, and z
-  #           # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-  #           #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
-  #           #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
-  #           #                                                                    label: np.array([test_exs[ex_idx].label]),
-  #           #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
-  #           #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
-  #               [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-  #                                                 feed_dict={_q1: q1_, #[testq1_s_input[ex_idx]],
-  #                                               _q2: q2_,
-  #                                                  label: np.array(label_),
-  #                                                                                              q2_len: np.array(q2_sq_len_), 
-  #                                                                                              q1_len: np.array(q1_sq_len_)}) 
-  #               #print len(test_exs)
-  #               for b in xrange(0, len(pred_this_instance)):
-  #                   curr_idx = ex_idx * batch_test + b
-  #               #print curr_idx
-  #                   if (test_exs[curr_idx].label == pred_this_instance[b]):
-  #                       test_correct += 1
-
-  #                   if i == num_epochs - 1:
-  #                       f.write(str(pred_this_instance[b]))
-		# 	f1.write(str(test_exs[curr_idx].label))
 
 
+                #print test_correct
+            # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
+            #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
+            # print "  Hidden layer activations for this example: " + repr(z_this_instance)
+            str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
+            str2 =  1.0*test_correct/len(test_exs)
+            #saver.save(sess, str(name)+'bench1_epoch', global_step=i)
+            print str1
+            print str2
 
-  #               #print test_correct
-  #           # print "Example " + repr(test_serial_input[ex_idx]) + "; gold = " + repr(test_labels_arr[ex_idx]) + "; pred = " +\
-  #           #       repr(pred_this_instance) + " with probs " + repr(probs_this_instance)
-  #           # print "  Hidden layer activations for this example: " + repr(z_this_instance)
-  #           str1 =  repr(test_correct) + "/" + repr(len(test_exs)) + " correct after training"
-  #           str2 =  1.0*test_correct/len(test_exs)
-  #           #saver.save(sess, str(name)+'bench1_epoch', global_step=i)
-  #           print str1
-  #           print str2
-
-  #           if i == num_epochs - 1:
-  #               f.close()
-		# f1.close()
+            if i == num_epochs - 1:
+                f.close()
+		f1.close()
 	#saver.save(sess, str(name)+'bench1_epoch', global_step=10)
 
 
