@@ -2070,8 +2070,8 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         initializer=tf.contrib.layers.xavier_initializer())#seed=0))
 
     units = 100
-    sent1_f = tf.tensordot(output1, F, 1)
-    sent2_f = tf.tensordot(output2, F, 1)
+    sent1_f = tf.layers.dense(output1, hidden_ff)
+    sent2_f = tf.layers.dense(output2, hidden_ff)
 
     print sent1_f.shape, sent2_f.shape
 
@@ -2106,11 +2106,11 @@ def train_bench9(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #n_along_b = tf.divide(along_b, tf.reduce_sum(along_b, axis=0))
 
     #unnorm_beta = tf.tensordot(exp_att, output2, 1)
-    unnorm_beta = tf.matmul(exp_att, output2, 1)
+    unnorm_beta = tf.matmul(exp_att, output2, 2) #1)
     #print unnorm_beta.shape, along_a.shape
     beta = tf.div(unnorm_beta, along_a)
 
-    unnorm_alpha = tf.matmul(exp_att, output1, 1)
+    unnorm_alpha = tf.matmul(exp_att, output1, 2) #1)
     alpha = tf.div(unnorm_alpha, along_b)
 
     #print "HEY there...", beta.shape, alpha.shape
@@ -2318,28 +2318,42 @@ def train_svm(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01
     train_Y = []
 
     for qp in train_exs:
-        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
-        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
-        train_X.append([avg_q1, avg_q2])
+	q1 = map(word_embeddings.get_embedding_byidx, qp.indexed_q1)
+	#print len(q1), len(q1[0])
+	avg_q1 = np.mean(np.asarray(q1), axis=0)
+	#print avg_q1.shape
+        #avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=0)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=0)
+        qp1 = np.asarray([avg_q1, avg_q2])
+	#print qp1.shape
+	train_X.append(np.ndarray.flatten(qp1, 'F'))
         train_Y.append(qp.label)
 
     print len(test_exs), "Test set"
     test_X = []
     test_Y = []
 
-    for qp in train_exs:
-        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=1)
-        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=1)
-        test_X.append([avg_q1, avg_q2])
+    for qp in test_exs:
+        avg_q1 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q1)), axis=0)
+        avg_q2 = np.mean(np.asarray(map(word_embeddings.get_embedding_byidx, qp.indexed_q2)), axis=0)
+        test_X.append(np.ndarray.flatten(np.asarray([avg_q1, avg_q2]), 'F'))
         test_Y.append(qp.label)
 
     from sklearn import svm
     from sklearn.metrics import accuracy_score
-    clf = svm.SVC()
+    from sklearn.model_selection import GridSearchCV
+    
+    #tuned_parameters = [{'C': np.arange(0.75, 1.25, 0.05), 'gamma': np.arange(0.75, 1.25, 0.05)}]
+    clf = svm.SVC(C= 0.4, gamma= 0.4)
+    #clf = GridSearchCV(svm.SVC(), tuned_parameters)
     clf.fit(train_X, train_Y)
-
+    print clf.score(train_X, train_Y)
+    print clf.dual_coef_
+    f1 = open("alphas_0.95_0.95_.txt", "w+")
+    for i in range(len(clf.dual_coef_[0])):
+	f1.write(str(clf.dual_coef_ [0][i]) + ' ')
+    f1.close() 
     y_pred = clf.predict(test_X)
+    print np.sum(test_Y), np.sum(y_pred)
+    #print y_pred
     print accuracy_score(test_Y, y_pred)
-
-
-
