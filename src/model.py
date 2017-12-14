@@ -838,11 +838,16 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
 
     # DEFINING THE COMPUTATION GRAPH
 
-    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    q2 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
     label = tf.placeholder(tf.int32, None)
     q1_len = tf.placeholder(tf.int32, None)
     q2_len = tf.placeholder(tf.int32, None)
+
+    embeddings = tf.Variable(word_embeddings.vectors)
+    print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
 
     
 
@@ -970,14 +975,15 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 for b in xrange(0, batch_size):
                     #print b
                     curr_idx = ex_idx * batch_size + b
-                    q1_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_embeddings.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
+                    q1_.append(pad(train_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(train_exs[curr_idx].indexed_q2, seq_max_len))
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
                 
-                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {q1: q1_,
-                                                                                    q2: q2_,
+                [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
+                                                                                    _q2: q2_,
                                                                                    label: np.array(label_),
                                                                                    q2_len: np.array(q2_sq_len_), 
                                                                                    q1_len: np.array(q1_sq_len_)})
@@ -998,8 +1004,8 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
             #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
             [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
-                                                                              feed_dict={q1: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q1), seq_max_len)], #[testq1_s_input[ex_idx]],
-                                                                                q2: [pad(map(word_embeddings.get_embedding_byidx, test_exs[ex_idx].indexed_q2), seq_max_len)],
+                                                                              feed_dict={_q1: [pad(test_exs[ex_idx].indexed_q1, seq_max_len)], #[testq1_s_input[ex_idx]],
+                                                                                _q2: [pad(test_exs[ex_idx].indexed_q2, seq_max_len)],
                                                                                label: np.array([test_exs[ex_idx].label]),
                                                                                q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
@@ -1017,7 +1023,7 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         str2 =  1.0*test_correct/len(test_exs)
         print str1
         print str2
-        return str1, str(str2)
+        return str(str1)+ "\t" + str(str2)
 
 
 def train_bench5(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
