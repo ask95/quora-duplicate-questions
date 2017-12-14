@@ -895,16 +895,16 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
     #print "Z's shape is ", z.shape
     #print "Hey!", output.shape
     W_angle = tf.get_variable("W_angle", [2*num_cells, hidden_dim], 
-        initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        initializer=tf.contrib.layers.xavier_initializer()) #seed=0))
     W_dist = tf.get_variable("W_dist", [2*num_cells, hidden_dim], 
-        initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        initializer=tf.contrib.layers.xavier_initializer()) #seed=0))
 
     lyr_1 = tf.nn.sigmoid(tf.tensordot(distance, W_dist, 1) + tf.tensordot(angle, W_angle, 1))
 
     print lyr_1.shape
 
     W_2 = tf.get_variable("W_2", [hidden_dim, num_classes], 
-        initializer=tf.contrib.layers.xavier_initializer(seed=0))
+        initializer=tf.contrib.layers.xavier_initializer()) #seed=0))
     probs = tf.nn.softmax(tf.tensordot(lyr_1, W_2, 1))
 
     one_best = tf.argmax(probs, axis=1)
