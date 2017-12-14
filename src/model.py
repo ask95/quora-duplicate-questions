@@ -261,6 +261,7 @@ def train_bench1(train_exs, valid_exs, test_exs, word_embeddings, initial_learni
                 for b in xrange(0, batch_size_pred):
                     curr_idx = ex_idx * batch_size_pred + b
                     if (train_exs[curr_idx].label == pred_this_instance[b]):
+                        print "Yo"
                         train_correct += 1
             print 'Train accuracy', 
             #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
