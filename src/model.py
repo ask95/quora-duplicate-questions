@@ -10,19 +10,30 @@ import random
 
 # Returns a new numpy array with the data from np_arr padded to be of length length. If length is less than the
 # length of the base array, truncates instead.
-def pad_to_length(np_arr, length):
+def pad_to_len(np_arr, length):
     result = np.ones(length)*(-1)
-    result[0:np_arr.shape[0]] = np_arr
+    result[0:len(np_arr)] = np_arr
     return result
-
 
 def pad(seq, length):
-    seq = np.asarray(seq)
-    if length < np.size(seq, 0):
-        return seq[:length, :]
-    result = np.zeros((length, np.size(seq, 1)))
-    result[0:seq.shape[0], :] = seq
-    return result
+	seq = np.asarray(seq)
+   #print np.size(seq)
+    	#print np.size(seq, 0)
+
+	if length < np.size(seq, 0):
+		return seq[:length]
+	result = np.zeros(length)
+	result[0:seq.shape[0]] = seq
+	return result
+
+
+#def pad(seq, length):
+#    seq = np.asarray(seq)
+#    if length < np.size(seq, 0):
+#        return seq[:length]
+#    result = np.zeros((length, np.size(seq)))
+#    result[0:seq.shape[0]] = seq
+#    return result
 
 
 def train_bench1(train_exs, valid_exs, test_exs, word_embeddings, initial_learning_rate = 0.001, learning_rate_decay_factor=0.995):
@@ -104,22 +115,22 @@ def train_bench1(train_exs, valid_exs, test_exs, word_embeddings, initial_learni
 
     print "TEST Extraction ends!"
 
-    # _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
-    # _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
-    # label = tf.placeholder(tf.int32, None)
-    # q1_len = tf.placeholder(tf.int32, None)
-    # q2_len = tf.placeholder(tf.int32, None)
-
-    # embeddings = tf.Variable(word_embeddings.vectors)
-    # print _q1
-    # q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
-    # q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
-
-    q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
-    q2 = tf.placeholder(tf.float32, [None , seq_max_len, dim])
-    len1 = tf.placeholder(tf.int32, None)
-    len2 = tf.placeholder(tf.int32, None)
+    _q1 = tf.placeholder(tf.int32, [None, seq_max_len])
+    _q2 = tf.placeholder(tf.int32, [None, seq_max_len])
     label = tf.placeholder(tf.int32, None)
+    q1_len = tf.placeholder(tf.int32, None)
+    q2_len = tf.placeholder(tf.int32, None)
+
+    embeddings = tf.Variable(word_embeddings.vectors)
+    # print _q1
+    q1 = tf.cast(tf.nn.embedding_lookup(embeddings, _q1), tf.float32)
+    q2 = tf.cast(tf.nn.embedding_lookup(embeddings, _q2), tf.float32)
+
+    #q1 = tf.placeholder(tf.float32, [None, seq_max_len, dim])
+    #q2 = tf.placeholder(tf.float32, [None , seq_max_len, dim])
+    #len1 = tf.placeholder(tf.int32, None)
+    #len2 = tf.placeholder(tf.int32, None)
+    #label = tf.placeholder(tf.int32, None)
 
     
     #serial input (seq of 300 corresponding to each word)
@@ -819,7 +830,7 @@ def train_bench3(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         print str2
         return str(str1)+ "\t" + str(str2)
 
-def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
+def train_bench4(train_exs, valid_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 60
@@ -1014,6 +1025,7 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
+		#print len(q1_), len(q1_[0]), len(q1_[0][0])
                 
                 [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
                                                                                     _q2: q2_,
@@ -1063,6 +1075,7 @@ def train_bench4(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     if (valid_exs[curr_idx].label == pred_this_instance[b]):
                         valid_correct += 1
         
+	    print valid_correct*100.0/len(valid_exs)
         # Evaluate on the test set
         test_correct = 0
         for ex_idx in xrange(0, len(test_exs)):
