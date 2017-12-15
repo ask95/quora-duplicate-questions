@@ -596,7 +596,7 @@ def train_bench2(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
         print str2
         return str(str1)+ "\t" + str(str2)
 
-def train_bench3(train_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
+def train_bench3(train_exs, valid_exs, test_exs, word_embeddings, initial_learning_rate = 0.01, learning_rate_decay_factor=0.995):
     print "HEY"
     # 59 is the max sentence length in the corpus, so let's set this to 60
     seq_max_len = 60
@@ -786,6 +786,7 @@ def train_bench3(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                     label_.append(train_exs[curr_idx].label)
                     q1_sq_len_.append(len(train_exs[curr_idx].indexed_q1))
                     q2_sq_len_.append(len(train_exs[curr_idx].indexed_q2))
+        #print len(q1_), len(q1_[0]), len(q1_[0][0])
                 
                 [_, loss_this_instance, summary] = sess.run([train_op, loss, merged], feed_dict = {_q1: q1_,
                                                                                     _q2: q2_,
@@ -796,7 +797,46 @@ def train_bench3(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
                 step_idx += 1
                 loss_this_iter += loss_this_instance
             print "Loss for iteration " + repr(i) + ": " + repr(loss_this_iter)
+
+            valid_correct = 0
+            batch_valid = 100
+
+            for ex_idx in xrange(0, len(valid_exs)/batch_valid):
+                q1_ = []
+                q2_ = []
+                label_ = []
+                q1_sq_len_ = []
+                q2_sq_len_ = []
+
+                for b in xrange(0, batch_valid):
+                #print b
+                    curr_idx = ex_idx * batch_valid + b
+                    q1_.append(pad(valid_exs[curr_idx].indexed_q1, seq_max_len))
+            #print q1_[0]
+                    q2_.append(pad(valid_exs[curr_idx].indexed_q2, seq_max_len))
+                    q1_sq_len_.append(len(valid_exs[curr_idx].indexed_q1))
+                    q2_sq_len_.append(len(valid_exs[curr_idx].indexed_q2))
+            # Note that we only feed in the x, not the y, since we're not training. We're also extracting different[word_embeddings.get_embedding_byidx(testQ1_mat[ex_idx])]
+            # quantities from the running of the computation graph, namely the probabilities, one_best, and z
+            # [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+            #                                                                   feed_dict={q1: [map(word_embeddings.get_embedding_byidx, testQ1_mat[ex_idx])], #[testq1_s_input[ex_idx]],
+            #                                                                     q2: [map(word_embeddings.get_embedding_byidx, testQ2_mat[ex_idx])],
+            #                                                                    label: np.array([test_exs[ex_idx].label]),
+            #                                                                    q2_len: np.array([testQ2_seq_lens[ex_idx]]), 
+            #                                                                    q1_len: np.array([testQ1_seq_lens[ex_idx]])})
+                [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
+                                                  feed_dict={_q1: q1_, #[testq1_s_input[ex_idx]],
+                                                _q2: q2_,
+                                               q2_len: np.array(q2_sq_len_), 
+                                               q1_len: np.array(q1_sq_len_)}) 
+                #print len(test_exs)
+                for b in xrange(0, len(pred_this_instance)):
+                    curr_idx = ex_idx * batch_valid + b
+                #print curr_idx
+                    if (valid_exs[curr_idx].label == pred_this_instance[b]):
+                        valid_correct += 1
         
+            print valid_correct*100.0/len(valid_exs)
         # Evaluate on the test set
         test_correct = 0
         for ex_idx in xrange(0, len(test_exs)):
@@ -811,7 +851,7 @@ def train_bench3(train_exs, test_exs, word_embeddings, initial_learning_rate = 0
             [probs_this_instance, pred_this_instance] = sess.run([probs, one_best],
                                                                               feed_dict={_q1: [pad(test_exs[ex_idx].indexed_q1, seq_max_len)], #[testq1_s_input[ex_idx]],
                                                                                 _q2: [pad(test_exs[ex_idx].indexed_q2, seq_max_len)],
-                                                                               label: np.array([test_exs[ex_idx].label]),
+                                                                               #label: np.array([test_exs[ex_idx].label]),
                                                                                q2_len: np.array([len(test_exs[ex_idx].indexed_q2)]), 
                                                                                q1_len: np.array([len(test_exs[ex_idx].indexed_q1)])}) 
             if ex_idx % 500 == 0:
