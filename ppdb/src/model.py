@@ -29,6 +29,33 @@ class AvgEmbeddingModel:
         print 'Test accuracy:', self.model.score(X, y)
            
 
+def train_svm_model(train_exs, valid_exs, test_exs, word_vectors, C_, gamma_, seed_):
+    def create_XY(exs):
+        X, Y = [], []
+        for qp in exs:
+            q1 = map(word_vectors.get_embedding_byidx, qp.indexed_q1)
+            q2 = map(word_vectors.get_embedding_byidx, qp.indexed_q2)
+            avg_q1 = np.mean(np.asarray(q1), axis=0)
+            avg_q2 = np.mean(np.asarray(q2), axis=0)
+            avg_qp = np.asarray([avg_q1, avg_q2])
+
+            X.append(np.ndarray.flatten(avg_qp, 'F'))
+            Y.append(qp.label)
+        return X, Y
+
+    train_X, train_Y = create_XY(train_exs)
+    valid_X, valid_Y = create_XY(valid_exs)
+    test_X, test_Y = create_XY(test_exs)
+
+    from sklearn import svm
+    from sklearn.metrics import accuracy_score
+    
+    clf = svm.SVC(C = C_, gamma = gamma_, random_state=seed_)
+    clf.fit(train_X, train_Y)
+    print clf.score(train_X, train_Y)
+    print clf.score(valid_X, valid_Y)
+    print clf.score(test_X, test_Y)
+
 def train_avg_model(train_exs, word_vectors):
     # generate average embeddings
     X = []
@@ -74,8 +101,6 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
 
     z1 = tf.divide(tf.reduce_sum(outputs1, axis=1), tf.tile(tf.expand_dims(tf.cast(len1, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
     z2 = tf.divide(tf.reduce_sum(outputs2, axis=1), tf.tile(tf.expand_dims(tf.cast(len2, dtype=tf.float32), axis=1), tf.constant([1, lstm_size])))
-
-    #states_concat = tf.concat([z1, z2], 1)
 
     distance = tf.squared_difference(z1, z2)
     angle = tf.multiply(z1, z2)
@@ -177,97 +202,36 @@ def train_lstm_model(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs,
                 loss_this_iter += loss_this_instance
             print 'Loss ' + repr(i) + ': ' + repr(loss_this_iter),
 
-            # evaluate
-            train_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(train_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
+            def evaluate(exs):
+                correct = 0
+                batch_size_pred = 100
+                for ex_idx in xrange(0, len(exs)/batch_size_pred):
+                    q1_ = []
+                    q2_ = []
+                    len1_ = []
+                    len2_ = []
+                    for b in xrange(0, batch_size_pred):
+                        curr_idx = ex_idx * batch_size_pred + b
+                        q1_.append(pad(map(word_vectors.get_embedding_byidx, exs[curr_idx].indexed_q1), seq_max_len))
+                        q2_.append(pad(map(word_vectors.get_embedding_byidx, exs[curr_idx].indexed_q2), seq_max_len))
+                        len1_.append(min(seq_max_len, len(exs[curr_idx].indexed_q1)))
+                        len2_.append(min(seq_max_len, len(exs[curr_idx].indexed_q2)))
 
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print train_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (train_exs[curr_idx].label == pred_this_instance[b]):
-                        train_correct += 1
-            print 'Train accuracy', 
-            #print repr(train_correct) + '/' + repr(len(train_exs)) + ' correct after training'
-            print 100.0*train_correct / len(train_exs),
+                    [pred_this_instance] = sess.run([prediction], feed_dict = {
+                        q1: q1_, 
+                        q2: q2_,
+                        len1: np.array(len1_),
+                        len2: np.array(len2_)})
+                    for b in xrange(0, batch_size_pred):
+                        curr_idx = ex_idx * batch_size_pred + b
+                        if (exs[curr_idx].label == pred_this_instance[b]):
+                            correct += 1
+                return 100.0*correct / len(exs)
+            
+            print 'Train acc: ', evaluate(train_exs),
+            print 'Valid acc: ', evaluate(valid_exs),
+            print 'Test acc: ', evaluate(test_exs)
 
-            # evaluate
-            valid_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(valid_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
-
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print valid_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (valid_exs[curr_idx].label == pred_this_instance[b]):
-                        valid_correct += 1
-            print 'Valid accuracy',
-            #print repr(valid_correct) + '/' + repr(len(valid_exs)) + ' correct after validing'
-            print 100.0*valid_correct / len(valid_exs),
-
-            # evaluate
-            test_correct = 0
-            batch_size_pred = 100
-            incorrect = []
-            for ex_idx in xrange(0, len(test_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
-
-                [pred_this_instance] = sess.run([prediction], feed_dict = {
-                    q1: q1_, 
-                    q2: q2_,
-                    len1: np.array(len1_),
-                    len2: np.array(len2_)})
-                #print test_exs[ex_idx].label, pred_this_instance[0]
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (test_exs[curr_idx].label == pred_this_instance[b]):
-                        test_correct += 1
-                    else:
-                        incorrect.append(test_exs[curr_idx].qp_idx)
-            print 'Test accuracy',
-            #print repr(test_correct) + '/' + repr(len(test_exs)) + ' correct after testing'
-            print 100.0*test_correct / len(test_exs)
-        for inc in incorrect:
-            print inc
 
 def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, test_exs, lstm_size, initial_learning_rate, decay_steps, learning_rate_decay_factor):
     n_classes = 2
@@ -370,7 +334,6 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
     z_combined = tf.concat([tf.tensordot(distance, W_dist, 1), \
                             tf.tensordot(angle, W_angle, 1)], 1)
 
-    #z_combined = tf.concat([z_concat_q, z_concat_p], 1)
     W_combined = tf.get_variable("W_comb", [2 * n_hidden, n_classes], \
                  initializer=tf.contrib.layers.xavier_initializer(seed=0))
 
@@ -391,9 +354,6 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
 
     var_list1 = filter(lambda v: 'net' in v.name, tf.trainable_variables())
     var_list2 = tf.trainable_variables()
-    #var_list2 = filter(lambda v: 'net' not in v.name, tf.trainable_variables())
-    #print vars_list1
-    #print vars_list2
 
     grads1 = opt.compute_gradients(loss_single, var_list = var_list1)
     apply_gradients_op1 = opt.apply_gradients(grads1, global_step=global_step)
@@ -408,9 +368,7 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
     init = tf.global_variables_initializer()
     merged = tf.summary.merge_all()
 
-    #print [v.name for v in tf.trainable_variables()]
-
-    n_epochs = 50
+    n_epochs = 20
     with tf.Session(config=tf.ConfigProto(log_device_placement=False)) as sess:
         train_writer = tf.summary.FileWriter('../logs/', sess.graph)
         tf.set_random_seed(0)
@@ -463,115 +421,32 @@ def train_lstm_model_two_step(quora_pairs, word_vectors, ppdb_pairs, valid_exs, 
                 loss_this_iter += loss_this_instance
             print 'Loss ' + repr(i) + ': ' + repr(loss_this_iter),
 
-            # evaluate
-            train_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(train_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, train_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(train_exs[curr_idx].indexed_q2)))
+            def evaluate(exs):
+                correct = 0
+                batch_size_pred = 100
+                for ex_idx in xrange(0, len(exs)/batch_size_pred):
+                    q1_ = []
+                    q2_ = []
+                    len1_ = []
+                    len2_ = []
+                    for b in xrange(0, batch_size_pred):
+                        curr_idx = ex_idx * batch_size_pred + b
+                        q1_.append(pad(map(word_vectors.get_embedding_byidx, exs[curr_idx].indexed_q1), seq_max_len))
+                        q2_.append(pad(map(word_vectors.get_embedding_byidx, exs[curr_idx].indexed_q2), seq_max_len))
+                        len1_.append(min(seq_max_len, len(exs[curr_idx].indexed_q1)))
+                        len2_.append(min(seq_max_len, len(exs[curr_idx].indexed_q2)))
 
-                if i % 2 == -1:
-                #if i < n_epochs/2:
-                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
-                        q1: q1_, 
-                        q2: q2_,
-                        len1: np.array(len1_),
-                        len2: np.array(len2_)})
-                else:
                     [pred_this_instance] = sess.run([prediction], feed_dict = {
                         q1: q1_, 
                         q2: q2_,
                         len1: np.array(len1_),
                         len2: np.array(len2_)})
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (train_exs[curr_idx].label == pred_this_instance[b]):
-                        train_correct += 1
-            print 'Train accuracy', 
-            print 100.0*train_correct / len(train_exs),
-
-            # evaluate
-            valid_correct = 0
-            batch_size_pred = 100
-            for ex_idx in xrange(0, len(valid_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, valid_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(valid_exs[curr_idx].indexed_q2)))
-
-                if i % 2 == -1:
-                #if i < n_epochs/2:
-                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
-                        q1: q1_, 
-                        q2: q2_,
-                        len1: np.array(len1_),
-                        len2: np.array(len2_)})
-                else:
-                    [pred_this_instance] = sess.run([prediction], feed_dict = {
-                        q1: q1_, 
-                        q2: q2_,
-                        len1: np.array(len1_),
-                        len2: np.array(len2_)})
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (valid_exs[curr_idx].label == pred_this_instance[b]):
-                        valid_correct += 1
-            print 'Valid accuracy',
-            print 100.0*valid_correct / len(valid_exs),
-
-            # evaluate
-            test_correct = 0
-            batch_size_pred = 100
-            incorrect = []
-            for ex_idx in xrange(0, len(test_exs)/batch_size_pred):
-                q1_ = []
-                q2_ = []
-                len1_ = []
-                len2_ = []
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    q1_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q1), seq_max_len))
-                    q2_.append(pad(map(word_vectors.get_embedding_byidx, test_exs[curr_idx].indexed_q2), seq_max_len))
-                    len1_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q1)))
-                    len2_.append(min(seq_max_len, len(test_exs[curr_idx].indexed_q2)))
-
-                if i % 2 == -1:
-                #if i < n_epochs/2:
-                    [pred_this_instance] = sess.run([pred_q], feed_dict = {
-                        q1: q1_, 
-                        q2: q2_,
-                        len1: np.array(len1_),
-                        len2: np.array(len2_)})
-                else:
-                    [pred_this_instance] = sess.run([prediction], feed_dict = {
-                        q1: q1_, 
-                        q2: q2_,
-                        len1: np.array(len1_),
-                        len2: np.array(len2_)})
-                for b in xrange(0, batch_size_pred):
-                    curr_idx = ex_idx * batch_size_pred + b
-                    if (test_exs[curr_idx].label == pred_this_instance[b]):
-                        test_correct += 1
-                    else:
-                        incorrect.append(test_exs[curr_idx].qp_idx)
-            print 'Test accuracy',
-            print 100.0*test_correct / len(test_exs)
-        '''
-        for inc in incorrect:
-            print inc
-        '''
-
+                    for b in xrange(0, batch_size_pred):
+                        curr_idx = ex_idx * batch_size_pred + b
+                        if (exs[curr_idx].label == pred_this_instance[b]):
+                            correct += 1
+                return 100.0*correct / len(exs)
+            
+            print 'Train acc: ', evaluate(train_exs),
+            print 'Valid acc: ', evaluate(valid_exs),
+            print 'Test acc: ', evaluate(test_exs)
