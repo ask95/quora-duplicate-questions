@@ -16,8 +16,17 @@ if __name__ == '__main__':
     word_vectors = read_word_embeddings("/u/akamath/Documents/quora-duplicate-questions/data/glove.6B.300d-relativized.txt")
 
     # Load train, dev, and test exs
-    exs = read_and_index(data_path + "mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
-    train_exs, test_exs = train_test_split(exs, test_size=0.3, random_state = 42)
+    exs = read_and_index(data_path + "1mini_quora_duplicate_questions.tsv", word_vectors.word_indexer)
+    #train_exs, test_exs = train_test_split(exs, test_size=0.3, random_state = 42)
+
+    def train_valid_test_split(exs):
+        random.Random(17).shuffle(exs)
+        n = len(exs)
+        s1 = int(n * 0.6)
+        s2 = int(n * 0.8)
+        return (exs[:s1], exs[s1:s2], exs[s2:])
+
+    train_exs, valid_exs, test_exs = train_valid_test_split(exs)
     #df = pd.read_csv('C:/Dataset.csv')
     #df['split'] = np.random.randn(df.shape[0], 1)
 
@@ -32,7 +41,7 @@ if __name__ == '__main__':
     else:
         system_to_run = "BENCH1"
     if system_to_run == "BENCH1":
-        test_exs_predicted = train_bench1(train_exs, test_exs, word_vectors, 0.1, 0.95)
+        test_exs_predicted = train_bench1(train_exs, valid_exs, test_exs, word_vectors, 0.1, 0.95)
         #write_sentiment_examples(test_exs_predicted, "test-blind.output.txt", word_vectors.word_indexer)
     elif system_to_run == "BENCH2":
         test_exs_predicted = train_bench2(train_exs, test_exs, word_vectors, 0.1, 0.95)
